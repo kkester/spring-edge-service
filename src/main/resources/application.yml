@@ -1,0 +1,13 @@
+server:
+  port: 9090
+
+zuul:
+  routes:
+    jsf:
+      path: /jsf/**
+      url: http://localhost:8180
+      customSensitiveHeaders: true
+    redis:
+      path: /redis/**
+      url: http://localhost:8280
+      customSensitiveHeaders: true
