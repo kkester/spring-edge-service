@@ -31,9 +31,12 @@ sourceSets {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-actuator'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-zuul'
+	implementation('org.springframework.boot:spring-boot-starter-actuator')
+	implementation('org.springframework.boot:spring-boot-starter-web')
+	implementation('org.springframework.cloud:spring-cloud-starter-netflix-zuul')
+	implementation('org.springframework.boot:spring-boot-starter-data-jpa')
+	implementation('org.springframework.boot:spring-boot-starter-data-redis')
+	implementation('redis.clients:jedis:2.9.0')
 
 	implementation("org.projectlombok:lombok:${lombokVersion}")
 	annotationProcessor("org.projectlombok:lombok:${lombokVersion}")

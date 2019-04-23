@@ -1,15 +1,20 @@
-package io.pivotal.edge;
+package io.pivotal.edge.limiting;
 
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 @Slf4j
 @Component
-public class RequestIdFilter extends ZuulFilter {
+public class RateLimitFilter extends ZuulFilter {
+
+    @Autowired
+    private RouteLocator routeLocator;
 
     @Override
     public String filterType() {
@@ -29,12 +34,11 @@ public class RequestIdFilter extends ZuulFilter {
     @Override
     public Object run() {
 
-        log.info("running request id filter");
+        log.info("running rate limit filter");
 
         RequestContext ctx = RequestContext.getCurrentContext();
-        String requestId = UUID.randomUUID().toString();
-        ctx.addZuulRequestHeader("x-request-id", requestId);
-        ctx.addZuulResponseHeader("x-request-id", requestId);
+        routeLocator.getMatchingRoute(ctx.getRequest().getRequestURI());
+
         return null;
     }
 
