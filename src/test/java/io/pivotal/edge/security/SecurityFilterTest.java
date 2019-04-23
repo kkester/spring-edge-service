@@ -13,10 +13,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.cloud.netflix.zuul.filters.Route;
 import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,9 +49,9 @@ public class SecurityFilterTest {
         String apiKey = "1234567890";
         String serviceId = "sid";
 
-        Map<String, List<String>> queryParams = new HashMap<>();
-        queryParams.put("apiKey", Arrays.asList(apiKey));
-        when(requestContext.getRequestQueryParams()).thenReturn(queryParams);
+        HttpServletRequest httpRequest = Mockito.mock(HttpServletRequest.class);
+        when(httpRequest.getParameter("apiKey")).thenReturn(apiKey);
+        when(requestContext.getRequest()).thenReturn(httpRequest);
         Route route = Mockito.mock(Route.class);
         when(route.getId()).thenReturn(serviceId);
         when(routeLocator.getMatchingRoute(any())).thenReturn(route);

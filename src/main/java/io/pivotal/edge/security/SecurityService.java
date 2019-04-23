@@ -1,10 +1,10 @@
 package io.pivotal.edge.security;
 
+import io.pivotal.edge.keys.ApplicationType;
 import io.pivotal.edge.keys.ClientKey;
 import io.pivotal.edge.keys.ClientKeyRepository;
 import io.pivotal.edge.keys.ClientService;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -12,9 +12,11 @@ import java.util.Optional;
 @Service
 public class SecurityService {
 
-    @Autowired
     private ClientKeyRepository clientKeyRepository;
 
+    public SecurityService(ClientKeyRepository clientKeyRepository) {
+        this.clientKeyRepository = clientKeyRepository;
+    }
 
     public ClientKey getClientKeyWithServiceId(ClientSecretCredentials credentials, String serviceId) {
 
@@ -24,7 +26,7 @@ public class SecurityService {
         }
 
         ClientKey clientKey = clientKeyOptional.get();
-        if (!StringUtils.equals(credentials.getSecretKey(), clientKey.getSecretKey())) {
+        if (ApplicationType.CONFIDENTIAL.equals(clientKey.getApplicationType()) && !StringUtils.equals(credentials.getSecretKey(), clientKey.getSecretKey())) {
             return null;
         }
 

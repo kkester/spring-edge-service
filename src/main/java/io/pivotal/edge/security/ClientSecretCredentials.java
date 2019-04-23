@@ -22,18 +22,17 @@ public class ClientSecretCredentials {
 
         HttpServletRequest httpServletRequest = ctx.getRequest();
         String authorizationHeader = (httpServletRequest == null ? null : httpServletRequest.getHeader(HttpHeaders.AUTHORIZATION));
-        authorizationHeader = StringUtils.stripStart(authorizationHeader, "Basic");
 
         ClientSecretCredentials clientSecretCredentials = null;
-
-        List<String> apiKeyQueryParam = ctx.getRequestQueryParams().get(API_KEY);
+        String apiKeyQueryParam = httpServletRequest.getParameter(API_KEY);
         if (StringUtils.isNotBlank(authorizationHeader)) {
+            authorizationHeader = StringUtils.stripStart(authorizationHeader, "Basic");
             String[] clientCreds = new String(Base64Utils.decodeFromString(authorizationHeader.trim())).split(":");
             if (clientCreds.length == 2) {
                 clientSecretCredentials = new ClientSecretCredentials(clientCreds[0], clientCreds[1]);
             }
-        } else if (!CollectionUtils.isEmpty(apiKeyQueryParam)){
-            clientSecretCredentials = new ClientSecretCredentials(apiKeyQueryParam.get(0), null);
+        } else if (StringUtils.isNotBlank(apiKeyQueryParam)){
+            clientSecretCredentials = new ClientSecretCredentials(apiKeyQueryParam, null);
         }
 
         return clientSecretCredentials;
