@@ -17,6 +17,7 @@ ext {
 	set('springCloudVersion', 'Greenwich.SR1')
 	set('cukesVersion', '1.2.5')
 	set('lombokVersion', '1.18.6')
+	set('wiremockVersion', '2.18.0')
 }
 
 sourceSets {
@@ -41,7 +42,8 @@ dependencies {
 	implementation("org.projectlombok:lombok:${lombokVersion}")
 	annotationProcessor("org.projectlombok:lombok:${lombokVersion}")
 	
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation('org.springframework.boot:spring-boot-starter-test')
+	testImplementation("com.github.tomakehurst:wiremock:${wiremockVersion}")
 }
 
 dependencyManagement {

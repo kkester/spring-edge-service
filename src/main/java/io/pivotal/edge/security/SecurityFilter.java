@@ -19,8 +19,6 @@ import static org.springframework.cloud.netflix.zuul.filters.support.FilterConst
 @Slf4j
 public class SecurityFilter extends ZuulFilter {
 
-
-
     private SecurityService securityService;
 
     private RouteLocator routeLocator;
