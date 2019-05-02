@@ -3,6 +3,7 @@ package io.pivotal.edge.security;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
+import io.pivotal.edge.events.EventPublisher;
 import io.pivotal.edge.keys.ClientKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.netflix.zuul.filters.Route;
@@ -23,9 +24,12 @@ public class SecurityFilter extends ZuulFilter {
 
     private RouteLocator routeLocator;
 
-    public SecurityFilter(SecurityService securityService, RouteLocator routeLocator) {
+    private EventPublisher eventPublisher;
+
+    public SecurityFilter(SecurityService securityService, RouteLocator routeLocator, EventPublisher eventPublisher) {
         this.securityService = securityService;
         this.routeLocator = routeLocator;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -55,6 +59,8 @@ public class SecurityFilter extends ZuulFilter {
             log.info("Security Filter: Client Credentials could not be resolved");
             throw new ZuulException(new SecurityException(), HttpStatus.FORBIDDEN.value(), "Invalid Client Credentials");
         }
+
+        eventPublisher.publishEvent(SecurityVerifiedEvent.builder().request(ctx.getRequest()).clientKey(clientCreds.getClientKey()).build());
 
         Route route = routeLocator.getMatchingRoute(this.getRequestUriFrom(ctx));
         if (!Objects.isNull(route)) {

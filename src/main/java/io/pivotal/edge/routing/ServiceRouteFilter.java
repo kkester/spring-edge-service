@@ -44,7 +44,7 @@ public class ServiceRouteFilter extends ZuulFilter {
     }
 
     @Override
-    public Object run() throws ZuulException {
+    public Object run() {
 
         log.info("Executing Service Route Filter");
 

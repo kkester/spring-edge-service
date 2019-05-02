@@ -1,6 +1,8 @@
 package io.pivotal.edge;
 
 import com.github.tomakehurst.wiremock.WireMockServer;
+import io.pivotal.edge.auditing.AuditLogRecord;
+import io.pivotal.edge.auditing.AuditLogRecordRepository;
 import io.pivotal.edge.keys.*;
 import org.junit.After;
 import org.junit.Before;
@@ -47,6 +49,9 @@ public class EdgeApplicationTest {
 	@Autowired
 	private MockMvc mockMvc;
 
+	@Autowired
+	private AuditLogRecordRepository auditLogRecordRepository;
+
 	@MockBean
 	private ClientKeyRepository clientKeyRepository;
 
@@ -68,6 +73,12 @@ public class EdgeApplicationTest {
 
 		// then
 		assertThat(result.getStatus()).isEqualTo(HttpStatus.OK.value());
+		String requestId = result.getHeader("x-request-id");
+		assertThat(requestId).isNotBlank();
+
+		AuditLogRecord auditLogRecord = auditLogRecordRepository.findById(requestId);
+		assertThat(auditLogRecord).isNotNull();
+		assertThat(auditLogRecord.getClientKey()).isEqualTo(clientKey.getId());
 	}
 
 	private String base64EncodeClientCredentials() {

@@ -1,6 +1,5 @@
 package io.pivotal.edge.security;
 
-import com.netflix.zuul.context.RequestContext;
 import io.pivotal.edge.keys.ApplicationType;
 import io.pivotal.edge.keys.ClientKey;
 import io.pivotal.edge.keys.ClientKeyRepository;

@@ -3,17 +3,24 @@ package io.pivotal.edge.auditing;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
 import java.util.UUID;
+
+import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PRE_TYPE;
 
 @Slf4j
 @Component
 public class RequestIdFilter extends ZuulFilter {
 
+    @Autowired
+    private AuditingService auditingService;
+
     @Override
     public String filterType() {
-        return "pre";
+        return PRE_TYPE;
     }
 
     @Override
@@ -29,12 +36,14 @@ public class RequestIdFilter extends ZuulFilter {
     @Override
     public Object run() {
 
-        log.info("running request id filter");
+        log.info("Executing Request Id Filter");
 
         RequestContext ctx = RequestContext.getCurrentContext();
-        String requestId = UUID.randomUUID().toString();
-        ctx.addZuulRequestHeader("x-request-id", requestId);
-        ctx.addZuulResponseHeader("x-request-id", requestId);
+        AuditLogRecord auditLogRecord = auditingService.getAuditLogRecordFor(ctx.getRequest());
+        if (!Objects.isNull(auditLogRecord)) {
+            ctx.addZuulRequestHeader("x-request-id", auditLogRecord.getId());
+            ctx.addZuulResponseHeader("x-request-id", auditLogRecord.getId());
+        }
         return null;
     }
 

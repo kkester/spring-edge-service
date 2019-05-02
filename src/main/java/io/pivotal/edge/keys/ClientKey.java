@@ -16,7 +16,6 @@ import java.util.concurrent.TimeUnit;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Entity
 @RedisHash("ClientKey")
 public class ClientKey {
 

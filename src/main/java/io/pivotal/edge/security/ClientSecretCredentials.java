@@ -5,10 +5,8 @@ import lombok.Data;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.Base64Utils;
-import org.springframework.util.CollectionUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
 
 @Data
 public class ClientSecretCredentials {
@@ -17,6 +15,7 @@ public class ClientSecretCredentials {
 
     private String clientKey;
     private String secretKey;
+    private String realm;
 
     public static ClientSecretCredentials createFrom(RequestContext ctx) {
 
@@ -26,21 +25,22 @@ public class ClientSecretCredentials {
         ClientSecretCredentials clientSecretCredentials = null;
         String apiKeyQueryParam = httpServletRequest.getParameter(API_KEY);
         if (StringUtils.isNotBlank(authorizationHeader)) {
-            authorizationHeader = StringUtils.stripStart(authorizationHeader, "Basic");
-            String[] clientCreds = new String(Base64Utils.decodeFromString(authorizationHeader.trim())).split(":");
+            String[] authSplit = authorizationHeader.split(" ");
+            String[] clientCreds = new String(Base64Utils.decodeFromString(authSplit[1].trim())).split(":");
             if (clientCreds.length == 2) {
-                clientSecretCredentials = new ClientSecretCredentials(clientCreds[0], clientCreds[1]);
+                clientSecretCredentials = new ClientSecretCredentials(clientCreds[0], clientCreds[1], authSplit[0]);
             }
         } else if (StringUtils.isNotBlank(apiKeyQueryParam)){
-            clientSecretCredentials = new ClientSecretCredentials(apiKeyQueryParam, null);
+            clientSecretCredentials = new ClientSecretCredentials(apiKeyQueryParam, null, null);
         }
 
         return clientSecretCredentials;
     }
 
-    private ClientSecretCredentials(String clientKey, String secretKey) {
+    private ClientSecretCredentials(String clientKey, String secretKey, String realm) {
         this.clientKey = clientKey;
         this.secretKey = secretKey;
+        this.realm = realm;
     }
 
 }
