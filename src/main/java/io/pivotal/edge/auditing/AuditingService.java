@@ -23,11 +23,14 @@ import java.util.*;
 @Slf4j
 public class AuditingService {
 
-    @Autowired
     private AuditLogRecordRepository auditLogRecordRepository;
 
-    @Autowired
     private RouteLocator routeLocator;
+
+    public AuditingService(AuditLogRecordRepository auditLogRecordRepository, RouteLocator routeLocator) {
+        this.auditLogRecordRepository = auditLogRecordRepository;
+        this.routeLocator = routeLocator;
+    }
 
     public Collection<AuditLogRecord> getAuditLogRecords() {
         return auditLogRecordRepository.findAll();

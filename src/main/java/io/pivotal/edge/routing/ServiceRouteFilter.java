@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import static io.pivotal.edge.EdgeApplicationConstants.ROUTE;
 import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.ROUTE_TYPE;
 
 @Component
@@ -24,9 +25,6 @@ public class ServiceRouteFilter extends ZuulFilter {
 
     @Autowired
     private ClientRoutingService clientRoutingService;
-
-    @Autowired
-    private RouteLocator routeLocator;
 
     @Override
     public String filterType() {
@@ -50,7 +48,7 @@ public class ServiceRouteFilter extends ZuulFilter {
 
         RequestContext ctx = RequestContext.getCurrentContext();
 
-        Route route = routeLocator.getMatchingRoute(ctx.getRequest().getRequestURI());
+        Route route = (Route)ctx.get(ROUTE);
         ClientSecretCredentials clientCreds = ClientSecretCredentials.createFrom(ctx);
         ClientService clientService = clientRoutingService.getClientServiceWithServiceId(clientCreds, route.getId());
         if (clientService != null) {

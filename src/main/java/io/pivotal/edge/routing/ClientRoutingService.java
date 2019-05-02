@@ -7,6 +7,7 @@ import io.pivotal.edge.security.ClientSecretCredentials;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -23,6 +24,10 @@ public class ClientRoutingService {
     }
 
     public ClientService getClientServiceWithServiceId(ClientSecretCredentials credentials, String serviceId) {
+
+        if (Objects.nonNull(credentials)) {
+            return null;
+        }
 
         Optional<ClientKey> clientKeyOptional = clientKeyRepository.findById(credentials.getClientKey());
         if (!clientKeyOptional.isPresent()) {

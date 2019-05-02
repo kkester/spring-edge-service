@@ -18,6 +18,10 @@ import org.springframework.util.Base64Utils;
 
 import javax.servlet.http.HttpServletRequest;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -55,9 +59,9 @@ public class SecurityFilterTest {
         String apiKey = "1234567890";
         String serviceId = "sid";
 
-        HttpServletRequest httpRequest = Mockito.mock(HttpServletRequest.class);
-        when(httpRequest.getParameter("apiKey")).thenReturn(apiKey);
-        when(requestContext.getRequest()).thenReturn(httpRequest);
+        HashMap<String, List<String>> requestQueryParams = new HashMap<>();
+        requestQueryParams.put("apiKey", Arrays.asList(apiKey));
+        when(requestContext.getRequestQueryParams()).thenReturn(requestQueryParams);
         Route route = Mockito.mock(Route.class);
         when(route.getId()).thenReturn(serviceId);
         when(routeLocator.getMatchingRoute(any())).thenReturn(route);

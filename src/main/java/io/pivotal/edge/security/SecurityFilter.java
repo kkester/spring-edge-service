@@ -3,6 +3,7 @@ package io.pivotal.edge.security;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
+import com.netflix.zuul.util.HTTPRequestUtils;
 import io.pivotal.edge.events.EventPublisher;
 import io.pivotal.edge.keys.ClientKey;
 import lombok.extern.slf4j.Slf4j;
@@ -12,8 +13,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
+import static io.pivotal.edge.EdgeApplicationConstants.API_KEY;
+import static io.pivotal.edge.EdgeApplicationConstants.ROUTE;
 import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PRE_TYPE;
 
 @Component
@@ -53,7 +58,6 @@ public class SecurityFilter extends ZuulFilter {
         log.info("Executing Security Filter");
 
         RequestContext ctx = RequestContext.getCurrentContext();
-
         ClientSecretCredentials clientCreds = ClientSecretCredentials.createFrom(ctx);
         if (Objects.isNull(clientCreds)) {
             log.info("Security Filter: Client Credentials could not be resolved");
@@ -70,8 +74,20 @@ public class SecurityFilter extends ZuulFilter {
                 throw new ZuulException(new SecurityException(), HttpStatus.FORBIDDEN.value(), "Invalid Client Credentials");
             }
         }
+        ctx.set(ROUTE, route);
+        ctx.set(API_KEY, clientCreds.getClientKey());
+        this.stripApiKeyFromQueryParameters(ctx);
 
         return null;
+    }
+
+    private void stripApiKeyFromQueryParameters(RequestContext requestContext) {
+
+        Map<String, List<String>> queryParams = HTTPRequestUtils.getInstance().getQueryParams();
+        if (Objects.nonNull(queryParams)) {
+            queryParams.remove(API_KEY);
+            requestContext.setRequestQueryParams(queryParams);
+        }
     }
 
     private String getRequestUriFrom(RequestContext ctx) {

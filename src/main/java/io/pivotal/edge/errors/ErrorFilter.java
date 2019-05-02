@@ -39,9 +39,8 @@ public class ErrorFilter extends ZuulFilter {
     @Override
     public Object run() {
 
-        log.info("Executing Error Filter");
-
         RequestContext ctx = RequestContext.getCurrentContext();
+        log.info("Executing Error Filter {}", ctx.getThrowable());
         ExceptionHolder exception = findZuulException(ctx.getThrowable());
         ctx.setResponseStatusCode(exception.getStatusCode());
 
