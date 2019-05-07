@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,7 +60,7 @@ public class SecurityFilterTest {
         String apiKey = "1234567890";
         String serviceId = "sid";
 
-        HashMap<String, List<String>> requestQueryParams = new HashMap<>();
+        Map<String, List<String>> requestQueryParams = new HashMap<>();
         requestQueryParams.put("apiKey", Arrays.asList(apiKey));
         when(requestContext.getRequestQueryParams()).thenReturn(requestQueryParams);
         Route route = Mockito.mock(Route.class);
@@ -81,6 +82,10 @@ public class SecurityFilterTest {
         verify(eventPublisher).publishEvent(securityEventArgumentCaptor.capture());
         SecurityVerifiedEvent securityVerifiedEvent = securityEventArgumentCaptor.getValue();
         assertThat(securityVerifiedEvent.getClientKey()).isEqualTo(apiKey);
+
+        ArgumentCaptor<Map<String, List<String>>> requestQueryParamCaptor = ArgumentCaptor.forClass(Map.class);
+        verify(requestContext).setRequestQueryParams(requestQueryParamCaptor.capture());
+        assertThat(requestQueryParamCaptor.getValue()).doesNotContainKeys("apiKey");
     }
 
     @Test

@@ -1,0 +1,23 @@
+spring:
+  data:
+    redis:
+      repositories:
+        enabled: false
+
+zuul:
+  SendErrorFilter:
+    error:
+      disable: true
+  routes:
+    test:
+      path: /test/**
+      url: http://localhost:${wiremock.dynamic.port}
+      customSensitiveHeaders: true
+      threshold: 10
+      thresholdUnit: SECONDS
+    error:
+      path: /error/**
+      url: http://localhost:${wiremock.dynamic.port}
+      customSensitiveHeaders: true
+      threshold: 200
+      thresholdUnit: MINUTES

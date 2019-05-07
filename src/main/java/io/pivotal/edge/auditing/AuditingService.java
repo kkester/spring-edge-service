@@ -8,7 +8,6 @@ import io.pivotal.edge.events.RequestCompletedEvent;
 import io.pivotal.edge.events.RequestInitiatedEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.Header;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.netflix.zuul.filters.Route;
 import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
 import org.springframework.http.HttpMethod;
@@ -16,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 
@@ -27,12 +27,14 @@ public class AuditingService {
 
     private RouteLocator routeLocator;
 
+    private Map<String, AuditLogRecord> auditLogRecordCache = new HashMap<>();
+
     public AuditingService(AuditLogRecordRepository auditLogRecordRepository, RouteLocator routeLocator) {
         this.auditLogRecordRepository = auditLogRecordRepository;
         this.routeLocator = routeLocator;
     }
 
-    public Collection<AuditLogRecord> getAuditLogRecords() {
+    public Iterable<AuditLogRecord> getAuditLogRecords() {
         return auditLogRecordRepository.findAll();
     }
 
@@ -45,14 +47,15 @@ public class AuditingService {
         Route matchingRoute = routeLocator.getMatchingRoute(requestUri);
 
         if (Objects.nonNull(matchingRoute)) {
+            String requestId = UUID.randomUUID().toString();
             AuditLogRecord record = new AuditLogRecord();
+            record.setId(requestId);
             record.setServiceId(matchingRoute.getId());
-            record.setRequestDate(requestEvent.getInitiatedTime());
+            record.setRequestDate(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(requestEvent.getInitiatedTime()));
             record.setMethod(HttpMethod.resolve(httpServletRequest.getMethod()));
             record.setRequestUri(requestUri);
-
-            auditLogRecordRepository.save(record);
-            httpServletRequest.setRequestId(record.getId());
+            httpServletRequest.setRequestId(requestId);
+            this.cache(record);
         }
     }
 
@@ -61,7 +64,7 @@ public class AuditingService {
         log.info("Updating audit log record");
 
         Header requestIdHeader = requestEvent.getHttpRequest().getFirstHeader("x-request-id");
-        AuditLogRecord logRecord = (requestIdHeader == null ? null : auditLogRecordRepository.findById(requestIdHeader.getValue()));
+        AuditLogRecord logRecord = this.getAuditLogRecordByIdFromCache(requestIdHeader.getValue());
         if (Objects.nonNull(logRecord)) {
             logRecord.setOriginExecutionTimeMillis(ChronoUnit.MILLIS.between(requestEvent.getStartTime(), requestEvent.getEndTime()));
             logRecord.setOriginHttpStatus(requestEvent.getHttpResponse().getStatusLine().getStatusCode());
@@ -81,10 +84,12 @@ public class AuditingService {
         log.info("Finalizing audit log record");
 
         HttpServletResponse httpServletResponse = requestEvent.getHttpServletResponse();
-        AuditLogRecord logRecord = auditLogRecordRepository.findById(requestEvent.getHttpServletRequest().getRequestId());
+        AuditLogRecord logRecord = this.getAuditLogRecordByIdFromCache(requestEvent.getHttpServletRequest().getRequestId());
         if (Objects.nonNull(logRecord)) {
             logRecord.setExecutionTimeMillis(ChronoUnit.MILLIS.between(requestEvent.getStartTime(), requestEvent.getEndTime()));
             logRecord.setHttpStatus(httpServletResponse.getStatus());
+            auditLogRecordRepository.save(logRecord);
+            this.removeFromCache(logRecord);
         } else {
             log.info("Finalizing audit log record failed due to record not found");
         }
@@ -94,9 +99,23 @@ public class AuditingService {
         AuditLogRecord auditLogRecord = null;
         if (request instanceof HttpServletRequestWrapper) {
             HttpServletRequestWrapper requestWrapper = (HttpServletRequestWrapper)request;
-            EdgeHttpServletRequestWrapper edgeRequestWrapper = (EdgeHttpServletRequestWrapper)requestWrapper.getRequest();
-            auditLogRecord = auditLogRecordRepository.findById(edgeRequestWrapper.getRequestId());
+            if (requestWrapper.getRequest() instanceof EdgeHttpServletRequestWrapper) {
+                EdgeHttpServletRequestWrapper edgeRequestWrapper = (EdgeHttpServletRequestWrapper) requestWrapper.getRequest();
+                auditLogRecord = this.getAuditLogRecordByIdFromCache(edgeRequestWrapper.getRequestId());
+            }
         }
         return auditLogRecord;
+    }
+
+    private void cache(AuditLogRecord record) {
+        auditLogRecordCache.put(record.getId(), record);
+    }
+
+    private AuditLogRecord getAuditLogRecordByIdFromCache(String requestId) {
+        return auditLogRecordCache.get(requestId);
+    }
+
+    private void removeFromCache(AuditLogRecord logRecord) {
+        auditLogRecordCache.remove(logRecord.getId());
     }
 }

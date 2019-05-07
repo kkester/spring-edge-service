@@ -1,0 +1,39 @@
+server:
+  port: 9090
+
+spring:
+  redis:
+    host: localhost
+    port: 6379
+
+zuul:
+  RateLimitFilter:
+    pre:
+      disable: true
+  routes:
+    jsf:
+      path: /jsf/**
+      url: http://localhost:8180
+      customSensitiveHeaders: true
+      threshold: 10
+      thresholdUnit: SECONDS
+    redis:
+      path: /redis/**
+      url: http://localhost:8280
+      customSensitiveHeaders: true
+      threshold: 200
+      thresholdUnit: MINUTES
+  ratelimit:
+    enabled: true
+    repository: REDIS
+    policy-list:
+      jsf:
+        - limit: 5
+          refresh-interval: 60
+          type:
+            - origin
+      redis:
+        - limit: 1
+          refresh-interval: 2
+          type:
+            - origin

@@ -25,7 +25,7 @@ public class ClientRoutingService {
 
     public ClientService getClientServiceWithServiceId(ClientSecretCredentials credentials, String serviceId) {
 
-        if (Objects.nonNull(credentials)) {
+        if (Objects.isNull(credentials)) {
             return null;
         }
 

@@ -3,15 +3,18 @@ package io.pivotal.edge.auditing;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.elasticsearch.annotations.Document;
 import org.springframework.http.HttpMethod;
 
-import java.time.LocalDateTime;
+import javax.persistence.Id;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Document(indexName = "edgeservice-v2", type = "auditlogrecords")
 public class AuditLogRecord {
 
+    @Id
     private String id;
     private HttpMethod method;
     private String requestUri;
@@ -19,7 +22,7 @@ public class AuditLogRecord {
     private Integer originHttpStatus;
     private String serviceId;
     private String clientKey;
-    private LocalDateTime requestDate;
+    private String requestDate;
     private Long executionTimeMillis;
     private Long originExecutionTimeMillis;
 

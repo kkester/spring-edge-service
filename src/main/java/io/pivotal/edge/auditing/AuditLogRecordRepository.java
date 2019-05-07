@@ -1,29 +1,9 @@
 package io.pivotal.edge.auditing;
 
-import org.springframework.stereotype.Component;
+import org.springframework.data.elasticsearch.repository.ElasticsearchRepository;
+import org.springframework.stereotype.Repository;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+@Repository
+public interface AuditLogRecordRepository extends ElasticsearchRepository<AuditLogRecord, String> {
 
-@Component
-public class AuditLogRecordRepository {
-
-    private Map<String, AuditLogRecord> logRecords = new HashMap<>();
-
-
-    public Collection<AuditLogRecord> findAll() {
-        return logRecords.values();
-    }
-
-    public void save(AuditLogRecord record) {
-        String requestId = UUID.randomUUID().toString();
-        record.setId(requestId);
-        logRecords.put(record.getId(), record);
-    }
-
-    public AuditLogRecord findById(String id) {
-        return logRecords.get(id);
-    }
 }

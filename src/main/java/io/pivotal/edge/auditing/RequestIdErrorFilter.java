@@ -7,20 +7,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
-import java.util.UUID;
 
-import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PRE_TYPE;
+import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.ERROR_TYPE;
 
 @Slf4j
 @Component
-public class RequestIdFilter extends ZuulFilter {
-
-    @Autowired
-    private AuditingService auditingService;
+public class RequestIdErrorFilter extends ZuulFilter {
 
     @Override
     public String filterType() {
-        return PRE_TYPE;
+        return ERROR_TYPE;
     }
 
     @Override
@@ -36,14 +32,11 @@ public class RequestIdFilter extends ZuulFilter {
     @Override
     public Object run() {
 
-        log.info("Executing Request Id Filter");
+        log.info("Executing Request Id Error Filter");
 
         RequestContext ctx = RequestContext.getCurrentContext();
-        AuditLogRecord auditLogRecord = auditingService.getAuditLogRecordFor(ctx.getRequest());
-        if (!Objects.isNull(auditLogRecord)) {
-            ctx.addZuulRequestHeader("x-request-id", auditLogRecord.getId());
-            ctx.addZuulResponseHeader("x-request-id", auditLogRecord.getId());
-        }
+
+
         return null;
     }
 

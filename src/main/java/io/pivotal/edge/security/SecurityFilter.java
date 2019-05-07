@@ -17,8 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import static io.pivotal.edge.EdgeApplicationConstants.API_KEY;
-import static io.pivotal.edge.EdgeApplicationConstants.ROUTE;
+import static io.pivotal.edge.EdgeApplicationConstants.*;
 import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PRE_TYPE;
 
 @Component
@@ -73,9 +72,9 @@ public class SecurityFilter extends ZuulFilter {
                 log.info("Security Filter: Client Key could not be resolved for credentials");
                 throw new ZuulException(new SecurityException(), HttpStatus.FORBIDDEN.value(), "Invalid Client Credentials");
             }
+            ctx.set(CLIENT_KEY, clientKey);
         }
         ctx.set(ROUTE, route);
-        ctx.set(API_KEY, clientCreds.getClientKey());
         this.stripApiKeyFromQueryParameters(ctx);
 
         return null;
@@ -85,7 +84,7 @@ public class SecurityFilter extends ZuulFilter {
 
         Map<String, List<String>> queryParams = HTTPRequestUtils.getInstance().getQueryParams();
         if (Objects.nonNull(queryParams)) {
-            queryParams.remove(API_KEY);
+            queryParams.remove(API_KEY_PARAM);
             requestContext.setRequestQueryParams(queryParams);
         }
     }

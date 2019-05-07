@@ -2,15 +2,17 @@ server:
   port: 9090
 
 spring:
-  redis:
-    host: localhost
-    port: 6379
   data:
     redis:
       repositories:
         enabled: true
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+
+elasticsearch:
+  clustername: elasticsearch_keithkester
+  host: localhost
+  port: 9300
 
 management:
   endpoints:
@@ -32,19 +34,8 @@ zuul:
   RequestIdFilter:
     pre:
       disable: false
-  RateLimitFilter:
-    pre:
-      disable: false
   routes:
-    jsf:
-      path: /jsf/**
-      url: http://localhost:8180
-      customSensitiveHeaders: true
-      threshold: 10
-      thresholdUnit: SECONDS
-    redis:
-      path: /redis/**
-      url: http://localhost:8280
-      customSensitiveHeaders: true
-      threshold: 200
-      thresholdUnit: MINUTES
+  ratelimit:
+    enabled: false
+    repository: REDIS
+    policy-list:

@@ -8,6 +8,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -31,6 +32,7 @@ import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
@@ -47,7 +49,7 @@ public class EdgeApplicationTest {
 	@Autowired
 	private MockMvc mockMvc;
 
-	@Autowired
+	@MockBean
 	private AuditLogRecordRepository auditLogRecordRepository;
 
 	@MockBean
@@ -101,8 +103,9 @@ public class EdgeApplicationTest {
 		String requestId = result.getHeader("x-request-id");
 		assertThat(requestId).isNotBlank();
 
-		AuditLogRecord auditLogRecord = auditLogRecordRepository.findById(requestId);
-		assertThat(auditLogRecord).isNotNull();
+		ArgumentCaptor<AuditLogRecord> auditLogRecordArgumentCaptor = ArgumentCaptor.forClass(AuditLogRecord.class);
+		verify(auditLogRecordRepository).save(auditLogRecordArgumentCaptor.capture());
+		AuditLogRecord auditLogRecord = auditLogRecordArgumentCaptor.getValue();
 		assertThat(auditLogRecord.getClientKey()).isEqualTo(publicClientKey.getId());
 	}
 
@@ -125,8 +128,9 @@ public class EdgeApplicationTest {
 		String requestId = result.getHeader("x-request-id");
 		assertThat(requestId).isNotBlank();
 
-		AuditLogRecord auditLogRecord = auditLogRecordRepository.findById(requestId);
-		assertThat(auditLogRecord).isNotNull();
+		ArgumentCaptor<AuditLogRecord> auditLogRecordArgumentCaptor = ArgumentCaptor.forClass(AuditLogRecord.class);
+		verify(auditLogRecordRepository).save(auditLogRecordArgumentCaptor.capture());
+		AuditLogRecord auditLogRecord = auditLogRecordArgumentCaptor.getValue();
 		assertThat(auditLogRecord.getClientKey()).isEqualTo(confidentialClientKey.getId());
 	}
 
