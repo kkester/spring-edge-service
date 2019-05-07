@@ -8,6 +8,8 @@ public class EdgeApplicationConstants {
 
     public static final String ROUTE = "ROUTE";
 
+    public static final String REQUEST_ID_HEADER_NAME = "x-request-id";
+
     private EdgeApplicationConstants() {
     }
 

@@ -1,11 +1,11 @@
 package io.pivotal.edge.auditing;
 
 import com.netflix.zuul.http.HttpServletRequestWrapper;
-import io.pivotal.edge.security.SecurityVerifiedEvent;
-import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
 import io.pivotal.edge.events.OriginRequestCompletedEvent;
 import io.pivotal.edge.events.RequestCompletedEvent;
 import io.pivotal.edge.events.RequestInitiatedEvent;
+import io.pivotal.edge.security.SecurityVerifiedEvent;
+import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.Header;
 import org.springframework.cloud.netflix.zuul.filters.Route;
@@ -16,8 +16,15 @@ import org.springframework.stereotype.Service;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
+
+import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
+import static java.time.temporal.ChronoField.*;
 
 @Service
 @Slf4j
@@ -28,6 +35,17 @@ public class AuditingService {
     private RouteLocator routeLocator;
 
     private Map<String, AuditLogRecord> auditLogRecordCache = new HashMap<>();
+
+    private DateTimeFormatter DATE_FORMAT = new DateTimeFormatterBuilder()
+            .parseCaseInsensitive()
+            .append(ISO_LOCAL_DATE)
+            .appendLiteral('T')
+            .appendValue(HOUR_OF_DAY, 2)
+            .appendLiteral(':')
+            .appendValue(MINUTE_OF_HOUR, 2)
+            .appendLiteral(':')
+            .appendValue(SECOND_OF_MINUTE, 2)
+            .toFormatter();
 
     public AuditingService(AuditLogRecordRepository auditLogRecordRepository, RouteLocator routeLocator) {
         this.auditLogRecordRepository = auditLogRecordRepository;
@@ -51,7 +69,7 @@ public class AuditingService {
             AuditLogRecord record = new AuditLogRecord();
             record.setId(requestId);
             record.setServiceId(matchingRoute.getId());
-            record.setRequestDate(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(requestEvent.getInitiatedTime()));
+            record.setRequestDate(DATE_FORMAT.format(requestEvent.getInitiatedTime()));
             record.setMethod(HttpMethod.resolve(httpServletRequest.getMethod()));
             record.setRequestUri(requestUri);
             httpServletRequest.setRequestId(requestId);

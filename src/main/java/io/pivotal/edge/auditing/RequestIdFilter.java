@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.util.Objects;
 import java.util.UUID;
 
+import static io.pivotal.edge.EdgeApplicationConstants.REQUEST_ID_HEADER_NAME;
 import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PRE_TYPE;
 
 @Slf4j
@@ -41,8 +42,8 @@ public class RequestIdFilter extends ZuulFilter {
         RequestContext ctx = RequestContext.getCurrentContext();
         AuditLogRecord auditLogRecord = auditingService.getAuditLogRecordFor(ctx.getRequest());
         if (!Objects.isNull(auditLogRecord)) {
-            ctx.addZuulRequestHeader("x-request-id", auditLogRecord.getId());
-            ctx.addZuulResponseHeader("x-request-id", auditLogRecord.getId());
+            ctx.addZuulRequestHeader(REQUEST_ID_HEADER_NAME, auditLogRecord.getId());
+            ctx.addZuulResponseHeader(REQUEST_ID_HEADER_NAME, auditLogRecord.getId());
         }
         return null;
     }

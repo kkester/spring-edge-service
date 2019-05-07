@@ -28,6 +28,8 @@ sourceCompatibility = '1.8'
 
 repositories {
 	mavenCentral()
+	maven { url "https://repo.spring.io/milestone" }
+	mavenLocal()
 }
 
 ext {
@@ -49,20 +51,20 @@ sourceSets {
 }
 
 dependencies {
-	implementation('org.springframework.boot:spring-boot-starter-actuator')
-	implementation('org.springframework.boot:spring-boot-starter-web')
-	implementation('org.springframework.cloud:spring-cloud-starter-netflix-zuul')
-	implementation('com.marcosbarbero.cloud:spring-cloud-zuul-ratelimit:2.2.0.RELEASE')
-	implementation('org.springframework.boot:spring-boot-starter-data-jpa')
-	implementation('org.springframework.boot:spring-boot-starter-data-redis')
-	implementation('redis.clients:jedis:2.9.0')
-	implementation('org.springframework.data:spring-data-elasticsearch')
+	compile('org.springframework.boot:spring-boot-starter-actuator')
+	compile('org.springframework.boot:spring-boot-starter-web')
+	compile('org.springframework.cloud:spring-cloud-starter-netflix-zuul')
+	compile('com.marcosbarbero.cloud:spring-cloud-zuul-ratelimit:2.2.0.RELEASE')
+	compile('org.springframework.boot:spring-boot-starter-data-jpa')
+	compile('org.springframework.boot:spring-boot-starter-data-redis')
+	compile('redis.clients:jedis:2.9.0')
+	compile('org.springframework.data:spring-data-elasticsearch')
 
-	implementation("org.projectlombok:lombok:${lombokVersion}")
+	compileOnly("org.projectlombok:lombok:${lombokVersion}")
 	annotationProcessor("org.projectlombok:lombok:${lombokVersion}")
-	
-	testImplementation('org.springframework.boot:spring-boot-starter-test')
-	testImplementation("com.github.tomakehurst:wiremock:${wiremockVersion}")
+
+	testCompile('org.springframework.boot:spring-boot-starter-test')
+	testCompile("com.github.tomakehurst:wiremock:${wiremockVersion}")
 
 	itestCompile("info.cukes:cucumber-java:${cukesVersion}")
 	itestCompile("info.cukes:cucumber-junit:${cukesVersion}")
@@ -78,15 +80,21 @@ dependencyManagement {
 }
 
 task itest(type: Test) {
+
+	/* Pass all the properties */
 	systemProperties System.getProperties()
 
 	testClassesDirs = sourceSets.itest.output.classesDirs
 	classpath = sourceSets.itest.runtimeClasspath
 
+	// This is not needed, but I like to see which tests have run
 	testLogging {
 		events "passed", "skipped", "failed"
 	}
 
+	// Gradle skips tasks whose input and output are up to date.
+	// To ensure that your integration tests are run every time,
+	// tell Gradle that the outputs of the integrationTest task should always be considered out of date.
 	outputs.upToDateWhen { false }
 }
 

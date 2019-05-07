@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Objects;
 
+import static io.pivotal.edge.EdgeApplicationConstants.REQUEST_ID_HEADER_NAME;
 import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.ERROR_TYPE;
 
 @Slf4j
@@ -35,7 +36,10 @@ public class RequestIdErrorFilter extends ZuulFilter {
         log.info("Executing Request Id Error Filter");
 
         RequestContext ctx = RequestContext.getCurrentContext();
+        ctx.addZuulResponseHeader("x-request-id", "XXXXX");
 
+        String requestId = ctx.getZuulRequestHeaders().get(REQUEST_ID_HEADER_NAME);
+        ctx.getResponse().addHeader(REQUEST_ID_HEADER_NAME, requestId);
 
         return null;
     }

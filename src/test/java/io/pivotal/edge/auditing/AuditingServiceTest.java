@@ -50,7 +50,7 @@ public class AuditingServiceTest {
     @Test
     public void testCreateAuditLogRecordFromEvent() {
         // given
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.of(1999, 1, 2, 3, 4, 5);
         RequestInitiatedEvent requestEvent = RequestInitiatedEvent.builder().httpServletRequest(edgeRequestWrapper).initiatedTime(now).build();
         Route route = Mockito.mock(Route.class);
         when(route.getId()).thenReturn("validServiceId");
@@ -64,6 +64,6 @@ public class AuditingServiceTest {
         assertThat(auditLogRecord).isNotNull();
         assertThat(auditLogRecord.getRequestUri()).isEqualTo(edgeRequestWrapper.getRequestURI());
         assertThat(auditLogRecord.getServiceId()).isEqualTo(route.getId());
-        assertThat(auditLogRecord.getRequestDate()).isEqualTo(DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(now));
+        assertThat(auditLogRecord.getRequestDate()).isEqualTo("1999-01-02T03:04:05");
     }
 }

@@ -23,5 +23,5 @@ gradle clean build -x itest
 #### Execute Integration Tests from Command Line
 
 ```text
-gradle clean build -x test
+gradle clean build -x test -Dapplication.integration.edge-service-app-host={edge_service_app_host}
 ```

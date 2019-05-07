@@ -28,8 +28,8 @@ zuul:
     repository: REDIS
     policy-list:
       jsf:
-        - limit: 5
-          refresh-interval: 60
+        - limit: 50
+          refresh-interval: 1
           type:
             - origin
       redis:

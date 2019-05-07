@@ -4,20 +4,7 @@ spring:
       repositories:
         enabled: false
 
-zuul:
-  SendErrorFilter:
-    error:
-      disable: true
-  routes:
-    test:
-      path: /test/**
-      url: http://localhost:${wiremock.dynamic.port}
-      customSensitiveHeaders: true
-      threshold: 10
-      thresholdUnit: SECONDS
-    error:
-      path: /error/**
-      url: http://localhost:${wiremock.dynamic.port}
-      customSensitiveHeaders: true
-      threshold: 200
-      thresholdUnit: MINUTES
+application:
+  integration:
+    edge-service-app-host: ${edge_service_app_host}
+    public-api-key: b14539f6ae4345f3a80d5b2a54550177
