@@ -1,7 +1,7 @@
 package io.pivotal.edge.auditing;
 
-import io.pivotal.edge.events.RequestInitiatedEvent;
 import com.netflix.zuul.http.HttpServletRequestWrapper;
+import io.pivotal.edge.events.RequestInitiatedEvent;
 import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,7 +14,6 @@ import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -41,6 +40,8 @@ public class AuditingServiceTest {
 
         HttpServletRequest mockRequest = Mockito.mock(HttpServletRequest.class);
         when(mockRequest.getRequestURI()).thenReturn("http://domain.net/resource");
+        when(mockRequest.getRemoteHost()).thenReturn("domain.net");
+        when(mockRequest.getServerPort()).thenReturn(80);
         edgeRequestWrapper = new EdgeHttpServletRequestWrapper(mockRequest);
         when(zuulRequestWrapper.getRequest()).thenReturn(edgeRequestWrapper);
 
@@ -65,5 +66,6 @@ public class AuditingServiceTest {
         assertThat(auditLogRecord.getRequestUri()).isEqualTo(edgeRequestWrapper.getRequestURI());
         assertThat(auditLogRecord.getServiceId()).isEqualTo(route.getId());
         assertThat(auditLogRecord.getRequestDate()).isEqualTo("1999-01-02T03:04:05");
+        assertThat(auditLogRecord.getHost()).isEqualTo("domain.net:80");
     }
 }

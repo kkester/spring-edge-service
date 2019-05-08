@@ -8,6 +8,8 @@ import io.pivotal.edge.security.SecurityVerifiedEvent;
 import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.Header;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
 import org.springframework.cloud.netflix.zuul.filters.Route;
 import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
 import org.springframework.http.HttpMethod;
@@ -72,6 +74,7 @@ public class AuditingService {
             record.setRequestDate(DATE_FORMAT.format(requestEvent.getInitiatedTime()));
             record.setMethod(HttpMethod.resolve(httpServletRequest.getMethod()));
             record.setRequestUri(requestUri);
+            record.setHost(httpServletRequest.getRemoteHost()+":"+httpServletRequest.getServerPort());
             httpServletRequest.setRequestId(requestId);
             this.cache(record);
         }
@@ -81,11 +84,16 @@ public class AuditingService {
 
         log.info("Updating audit log record");
 
-        Header requestIdHeader = requestEvent.getHttpRequest().getFirstHeader("x-request-id");
+        HttpRequest httpRequest = requestEvent.getHttpRequest();
+        Header requestIdHeader = httpRequest.getFirstHeader("x-request-id");
         AuditLogRecord logRecord = this.getAuditLogRecordByIdFromCache(requestIdHeader.getValue());
         if (Objects.nonNull(logRecord)) {
             logRecord.setOriginExecutionTimeMillis(ChronoUnit.MILLIS.between(requestEvent.getStartTime(), requestEvent.getEndTime()));
-            logRecord.setOriginHttpStatus(requestEvent.getHttpResponse().getStatusLine().getStatusCode());
+            logRecord.setOriginHost(requestEvent.getHost().toHostString());
+            HttpResponse httpResponse = requestEvent.getHttpResponse();
+            if (Objects.nonNull(httpResponse)) {
+                logRecord.setOriginHttpStatus(httpResponse.getStatusLine().getStatusCode());
+            }
         }
     }
 

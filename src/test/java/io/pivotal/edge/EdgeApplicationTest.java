@@ -3,7 +3,10 @@ package io.pivotal.edge;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.pivotal.edge.auditing.AuditLogRecord;
 import io.pivotal.edge.auditing.AuditLogRecordRepository;
-import io.pivotal.edge.keys.*;
+import io.pivotal.edge.keys.ApplicationType;
+import io.pivotal.edge.keys.ClientKey;
+import io.pivotal.edge.keys.ClientKeyRepository;
+import io.pivotal.edge.keys.ClientService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -24,13 +27,14 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.util.Base64Utils;
 
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static io.pivotal.edge.EdgeApplicationConstants.REQUEST_ID_HEADER_NAME;
+import static io.pivotal.edge.security.SecurityUtil.base64EncodeClientCredentials;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -100,7 +104,7 @@ public class EdgeApplicationTest {
 
 		// then
 		assertThat(result.getStatus()).isEqualTo(HttpStatus.OK.value());
-		String requestId = result.getHeader("x-request-id");
+		String requestId = result.getHeader(REQUEST_ID_HEADER_NAME);
 		assertThat(requestId).isNotBlank();
 
 		ArgumentCaptor<AuditLogRecord> auditLogRecordArgumentCaptor = ArgumentCaptor.forClass(AuditLogRecord.class);
@@ -120,7 +124,7 @@ public class EdgeApplicationTest {
 		RequestBuilder requestBuilder = MockMvcRequestBuilders
 				.get("/test/resource")
 				.accept(MediaType.APPLICATION_JSON)
-				.header(HttpHeaders.AUTHORIZATION, "Basic " + this.base64EncodeClientCredentials());
+				.header(HttpHeaders.AUTHORIZATION, "Basic " + base64EncodeClientCredentials(confidentialClientKey));
 		MockHttpServletResponse result = mockMvc.perform(requestBuilder).andReturn().getResponse();
 
 		// then
@@ -132,11 +136,6 @@ public class EdgeApplicationTest {
 		verify(auditLogRecordRepository).save(auditLogRecordArgumentCaptor.capture());
 		AuditLogRecord auditLogRecord = auditLogRecordArgumentCaptor.getValue();
 		assertThat(auditLogRecord.getClientKey()).isEqualTo(confidentialClientKey.getId());
-	}
-
-	private String base64EncodeClientCredentials() {
-		String credentials = confidentialClientKey.getId() + ":" + confidentialClientKey.getSecretKey();
-		return new String(Base64Utils.encode(credentials.getBytes()));
 	}
 
 	@After

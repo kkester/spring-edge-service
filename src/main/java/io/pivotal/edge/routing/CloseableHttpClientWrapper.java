@@ -28,8 +28,21 @@ public class CloseableHttpClientWrapper extends CloseableHttpClient {
     protected CloseableHttpResponse doExecute(HttpHost target, HttpRequest request, HttpContext context) throws IOException {
 
         LocalDateTime now = LocalDateTime.now();
-        CloseableHttpResponse httpResponse = closeableHttpClient.execute(target, request, context);
-        eventPublisher.publishEvent(OriginRequestCompletedEvent.builder().httpRequest(request).httpResponse(httpResponse).startTime(now).endTime(LocalDateTime.now()).build());
+        CloseableHttpResponse httpResponse = null;
+        try {
+            httpResponse = closeableHttpClient.execute(target, request, context);
+        } finally {
+            LocalDateTime endTime = LocalDateTime.now();
+            OriginRequestCompletedEvent requestCompletedEvent = OriginRequestCompletedEvent.builder()
+                    .endTime(endTime)
+                    .host(target)
+                    .context(context)
+                    .httpRequest(request)
+                    .httpResponse(httpResponse)
+                    .startTime(now)
+                    .build();
+            eventPublisher.publishEvent(requestCompletedEvent);
+        }
         return httpResponse;
     }
 

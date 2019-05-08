@@ -7,4 +7,6 @@ spring:
 application:
   integration:
     edge-service-app-host: ${edge_service_app_host}
-    public-api-key: b14539f6ae4345f3a80d5b2a54550177
+    public-api-key: 208a7016b68340b6b6924edcd96eb958
+    confidential-api-key: 11b5c55c731f4a07a6f3a145dda1dd04
+    confidential-secret-key: 554e4192ca7444fa940509e0aa94e3b3

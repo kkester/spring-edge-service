@@ -11,13 +11,15 @@ import javax.persistence.Id;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(indexName = "edgeservice-v2", type = "auditlogrecords")
+@Document(indexName = "edgeservice", type = "auditlogrecords")
 public class AuditLogRecord {
 
     @Id
     private String id;
     private HttpMethod method;
     private String requestUri;
+    private String host;
+    private String originHost;
     private Integer httpStatus;
     private Integer originHttpStatus;
     private String serviceId;

@@ -36,22 +36,36 @@ public class EdgeServiceSteps {
     @Value("${application.integration.public-api-key}")
     private String publicApiKey;
 
+    @Value("${application.integration.confidential-api-key}")
+    private String confidentialApiKey;
+
+    @Value("${application.integration.confidential-secret-key}")
+    private String confidentialSecretKey;
+
     @Given("^a typical \"([^\"]*)\" Client Key$")
     public void the_client_issues_GET_participant(String clientApiKeyType) {
         ApiRequest apiRequest = new ApiRequest();
         ClientKey clientKey = new ClientKey();
-        clientKey.setApplicationType(ApplicationType.PUBLIC);
-        clientKey.setId(publicApiKey);
+        ApplicationType applicationType = ApplicationType.valueOf(clientApiKeyType.toUpperCase());
+        if (ApplicationType.PUBLIC.equals(applicationType)) {
+            clientKey.setApplicationType(ApplicationType.PUBLIC);
+            clientKey.setId(publicApiKey);
+        } else if (ApplicationType.CONFIDENTIAL.equals(applicationType)) {
+            clientKey.setApplicationType(ApplicationType.CONFIDENTIAL);
+            clientKey.setId(confidentialApiKey);
+            clientKey.setSecretKey(confidentialSecretKey);
+        }
         apiRequest.setClientKey(clientKey);
         restApiFeature.setCurrentRequest(apiRequest);
     }
 
     @When("^the client calls for \"([^\"]*)\" a (\\d+) times concurrently using \"([^\"]*)\"$")
-    public void the_client_issues_GET_products(String resource, int count, String serviceId) throws InterruptedException {
+    public void the_client_issues_GET_for_a_resource_from_a_service(String resource, int count, String serviceId) throws InterruptedException {
         ApiRequest currentRequest = restApiFeature.getCurrentRequest();
         currentRequest.setUrl(String.format("/%s/%s", serviceId,resource));
         for (int x = 0; x <= count; x++) {
             restApiFeature.getResource(currentRequest);
+            TimeUnit.MILLISECONDS.sleep(10);
         }
         while (restApiFeature.getResponses().size() < count) {
             log.info("Waiting for requests to finish ... {} out of {}", restApiFeature.getResponses().size(), count);

@@ -100,3 +100,9 @@ task itest(type: Test) {
 
 check.dependsOn itest
 itest.mustRunAfter test
+
+bootRun {
+	if ( project.hasProperty("profile") ) {
+		bootRun.systemProperty 'spring.profiles.active', "${profile}"
+	}
+}

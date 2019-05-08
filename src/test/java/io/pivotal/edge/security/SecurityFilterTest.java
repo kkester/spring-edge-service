@@ -14,15 +14,14 @@ import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.cloud.netflix.zuul.filters.Route;
 import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
 import org.springframework.http.HttpHeaders;
-import org.springframework.util.Base64Utils;
 
 import javax.servlet.http.HttpServletRequest;
-
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static io.pivotal.edge.security.SecurityUtil.base64EncodeClientCredentials;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -96,7 +95,7 @@ public class SecurityFilterTest {
         String serviceId = "sid";
 
         HttpServletRequest httpRequest = Mockito.mock(HttpServletRequest.class);
-        when(httpRequest.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn("basic " + this.base64EncodeClientCredentials(apiKey, secretKey));
+        when(httpRequest.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn("basic " + base64EncodeClientCredentials(apiKey, secretKey));
         when(requestContext.getRequest()).thenReturn(httpRequest);
         Route route = Mockito.mock(Route.class);
         when(route.getId()).thenReturn(serviceId);
@@ -120,10 +119,5 @@ public class SecurityFilterTest {
         SecurityVerifiedEvent securityVerifiedEvent = securityEventArgumentCaptor.getValue();
         assertThat(securityVerifiedEvent.getRequest()).isEqualTo(httpRequest);
         assertThat(securityVerifiedEvent.getClientKey()).isEqualTo(apiKey);
-    }
-
-    private String base64EncodeClientCredentials(String clientKey, String secretKey) {
-        String credentials = clientKey + ":" + secretKey;
-        return new String(Base64Utils.encode(credentials.getBytes()));
     }
 }

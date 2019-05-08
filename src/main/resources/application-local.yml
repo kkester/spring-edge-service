@@ -17,9 +17,9 @@ zuul:
       customSensitiveHeaders: true
       threshold: 10
       thresholdUnit: SECONDS
-    redis:
-      path: /redis/**
-      url: http://localhost:8280
+    cache:
+      path: /cache/**
+      url: http://localhost:8083
       customSensitiveHeaders: true
       threshold: 200
       thresholdUnit: MINUTES
@@ -28,12 +28,12 @@ zuul:
     repository: REDIS
     policy-list:
       jsf:
-        - limit: 50
+        - limit: 100
           refresh-interval: 1
           type:
             - origin
-      redis:
-        - limit: 1
+      cache:
+        - limit: 200
           refresh-interval: 2
           type:
             - origin
