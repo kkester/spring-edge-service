@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.http.Header;
 import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.cache.CacheResponseStatus;
 import org.springframework.cloud.netflix.zuul.filters.Route;
 import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
 import org.springframework.http.HttpMethod;
@@ -20,8 +21,6 @@ import javax.servlet.http.HttpServletResponse;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -33,13 +32,7 @@ import static java.time.temporal.ChronoField.*;
 @Slf4j
 public class AuditingService {
 
-    private AuditLogRecordRepository auditLogRecordRepository;
-
-    private RouteLocator routeLocator;
-
-    private Map<String, AuditLogRecord> auditLogRecordCache = new HashMap<>();
-
-    private DateTimeFormatter DATE_FORMAT = new DateTimeFormatterBuilder()
+    private static final DateTimeFormatter DATE_FORMAT = new DateTimeFormatterBuilder()
             .parseCaseInsensitive()
             .append(ISO_LOCAL_DATE)
             .appendLiteral('T')
@@ -50,13 +43,13 @@ public class AuditingService {
             .appendValue(SECOND_OF_MINUTE, 2)
             .toFormatter();
 
-    public AuditingService(AuditLogRecordRepository auditLogRecordRepository, RouteLocator routeLocator) {
-        this.auditLogRecordRepository = auditLogRecordRepository;
-        this.routeLocator = routeLocator;
-    }
+    private AuditLogRecordCache auditLogRecordCache;
 
-    public Iterable<AuditLogRecord> getAuditLogRecords() {
-        return auditLogRecordRepository.findAll();
+    private RouteLocator routeLocator;
+
+    public AuditingService(AuditLogRecordCache auditLogRecordCache, RouteLocator routeLocator) {
+        this.auditLogRecordCache = auditLogRecordCache;
+        this.routeLocator = routeLocator;
     }
 
     public void createAuditLogRecordFrom(RequestInitiatedEvent requestEvent) {
@@ -77,7 +70,7 @@ public class AuditingService {
             record.setRequestUri(requestUri);
             record.setHost(httpServletRequest.getRemoteHost()+":"+httpServletRequest.getServerPort());
             httpServletRequest.setRequestId(requestId);
-            this.cache(record);
+            auditLogRecordCache.cache(record);
         }
     }
 
@@ -87,7 +80,7 @@ public class AuditingService {
 
         HttpRequest httpRequest = requestEvent.getHttpRequest();
         Header requestIdHeader = httpRequest.getFirstHeader(REQUEST_ID_HEADER_NAME);
-        AuditLogRecord logRecord = this.getAuditLogRecordByIdFromCache(requestIdHeader.getValue());
+        AuditLogRecord logRecord = auditLogRecordCache.findById(requestIdHeader.getValue());
         if (Objects.nonNull(logRecord)) {
             logRecord.setOriginExecutionTimeMillis(ChronoUnit.MILLIS.between(requestEvent.getStartTime(), requestEvent.getEndTime()));
             logRecord.setOriginHost(requestEvent.getHost().toHostString());
@@ -95,11 +88,12 @@ public class AuditingService {
             if (Objects.nonNull(httpResponse)) {
                 logRecord.setOriginHttpStatus(httpResponse.getStatusLine().getStatusCode());
             }
-//            CacheResponseStatus cacheResponseStatus = requestEvent.getContext().getCacheResponseStatus();
-//            if (Objects.nonNull(cacheResponseStatus)) {
-//                logRecord.setCacheStatus(cacheResponseStatus.name());
-//            }
-            logRecord.setCacheStatus("NONE");
+            CacheResponseStatus cacheResponseStatus = requestEvent.getContext().getCacheResponseStatus();
+            if (Objects.nonNull(cacheResponseStatus)) {
+                logRecord.setCacheStatus(cacheResponseStatus.name());
+            } else {
+                logRecord.setCacheStatus("NONE");
+            }
         }
     }
 
@@ -116,12 +110,11 @@ public class AuditingService {
         log.info("Finalizing audit log record");
 
         HttpServletResponse httpServletResponse = requestEvent.getHttpServletResponse();
-        AuditLogRecord logRecord = this.getAuditLogRecordByIdFromCache(requestEvent.getHttpServletRequest().getRequestId());
+        AuditLogRecord logRecord = auditLogRecordCache.findById(requestEvent.getHttpServletRequest().getRequestId());
         if (Objects.nonNull(logRecord)) {
             logRecord.setExecutionTimeMillis(ChronoUnit.MILLIS.between(requestEvent.getStartTime(), requestEvent.getEndTime()));
             logRecord.setHttpStatus(httpServletResponse.getStatus());
-            auditLogRecordRepository.save(logRecord);
-            this.removeFromCache(logRecord);
+            auditLogRecordCache.save(logRecord);
         } else {
             log.info("Finalizing audit log record failed due to record not found");
         }
@@ -133,21 +126,10 @@ public class AuditingService {
             HttpServletRequestWrapper requestWrapper = (HttpServletRequestWrapper)request;
             if (requestWrapper.getRequest() instanceof EdgeHttpServletRequestWrapper) {
                 EdgeHttpServletRequestWrapper edgeRequestWrapper = (EdgeHttpServletRequestWrapper) requestWrapper.getRequest();
-                auditLogRecord = this.getAuditLogRecordByIdFromCache(edgeRequestWrapper.getRequestId());
+                auditLogRecord = auditLogRecordCache.findById(edgeRequestWrapper.getRequestId());
             }
         }
         return auditLogRecord;
     }
 
-    private void cache(AuditLogRecord record) {
-        auditLogRecordCache.put(record.getId(), record);
-    }
-
-    private AuditLogRecord getAuditLogRecordByIdFromCache(String requestId) {
-        return auditLogRecordCache.get(requestId);
-    }
-
-    private void removeFromCache(AuditLogRecord logRecord) {
-        auditLogRecordCache.remove(logRecord.getId());
-    }
 }

@@ -45,7 +45,7 @@ public class AuditingServiceTest {
         edgeRequestWrapper = new EdgeHttpServletRequestWrapper(mockRequest);
         when(zuulRequestWrapper.getRequest()).thenReturn(edgeRequestWrapper);
 
-        subject = new AuditingService(auditLogRecordRepository, routeLocator);
+        subject = new AuditingService(new AuditLogRecordCache(auditLogRecordRepository), routeLocator);
     }
 
     @Test

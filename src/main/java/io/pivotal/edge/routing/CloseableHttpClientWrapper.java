@@ -4,6 +4,7 @@ import io.pivotal.edge.events.EventPublisher;
 import io.pivotal.edge.events.OriginRequestCompletedEvent;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
+import org.apache.http.client.cache.HttpCacheContext;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -27,7 +28,7 @@ public class CloseableHttpClientWrapper extends CloseableHttpClient {
     @Override
     protected CloseableHttpResponse doExecute(HttpHost target, HttpRequest request, HttpContext context) throws IOException {
 
-//        HttpCacheContext httpCacheContext = HttpCacheContext.create();
+        HttpCacheContext httpCacheContext = HttpCacheContext.create();
         LocalDateTime now = LocalDateTime.now();
         CloseableHttpResponse httpResponse = null;
         try {
@@ -37,8 +38,7 @@ public class CloseableHttpClientWrapper extends CloseableHttpClient {
             OriginRequestCompletedEvent requestCompletedEvent = OriginRequestCompletedEvent.builder()
                     .endTime(endTime)
                     .host(target)
-                    .context(context)
-//                    .context(httpCacheContext)
+                    .context(httpCacheContext)
                     .httpRequest(request)
                     .httpResponse(httpResponse)
                     .startTime(now)
