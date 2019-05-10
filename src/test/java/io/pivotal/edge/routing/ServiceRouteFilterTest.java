@@ -2,6 +2,7 @@ package io.pivotal.edge.routing;
 
 import com.netflix.zuul.context.RequestContext;
 import io.pivotal.edge.keys.ClientService;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -62,5 +63,10 @@ public class ServiceRouteFilterTest {
         ArgumentCaptor<URL> argumentCaptor = ArgumentCaptor.forClass(URL.class);
         verify(requestContext).setRouteHost(argumentCaptor.capture());
         assertThat(argumentCaptor.getValue().toURI().toString()).isEqualTo(path);
+    }
+
+    @After
+    public void tearDown() {
+        RequestContext.testSetCurrentContext(null);
     }
 }

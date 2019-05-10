@@ -4,6 +4,7 @@ import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
 import io.pivotal.edge.events.EventPublisher;
 import io.pivotal.edge.keys.ClientKey;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -120,4 +121,10 @@ public class SecurityFilterTest {
         assertThat(securityVerifiedEvent.getRequest()).isEqualTo(httpRequest);
         assertThat(securityVerifiedEvent.getClientKey()).isEqualTo(apiKey);
     }
+
+    @After
+    public void tearDown() {
+        RequestContext.testSetCurrentContext(null);
+    }
+
 }

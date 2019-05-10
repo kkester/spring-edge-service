@@ -1,7 +1,9 @@
 package io.pivotal.edge.auditing;
 
 import com.netflix.zuul.context.RequestContext;
+import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -16,7 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 
 @RunWith(MockitoJUnitRunner.class)
 public class RequestIdFilterTest {
@@ -64,4 +65,8 @@ public class RequestIdFilterTest {
         assertThat(argumentCaptor.getValue()).isEqualTo(REQUEST_ID);
     }
 
+    @After
+    public void tearDown() {
+        RequestContext.testSetCurrentContext(null);
+    }
 }

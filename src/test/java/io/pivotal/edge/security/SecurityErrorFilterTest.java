@@ -3,6 +3,7 @@ package io.pivotal.edge.security;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
 import io.pivotal.edge.events.EventPublisher;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -94,6 +95,11 @@ public class SecurityErrorFilterTest {
         // then
         assertThat(results).isNull();
         verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @After
+    public void tearDown() {
+        RequestContext.testSetCurrentContext(null);
     }
 
 }
