@@ -4,6 +4,7 @@ import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.util.HTTPRequestUtils;
 import io.pivotal.edge.keys.ClientKey;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.util.Base64Utils;
@@ -18,6 +19,7 @@ import static io.pivotal.edge.EdgeApplicationConstants.API_KEY_PARAM;
 import static io.pivotal.edge.EdgeApplicationConstants.CLIENT_KEY;
 
 @Data
+@Slf4j
 public class ClientSecretCredentials {
 
     private String clientKey;
@@ -28,9 +30,11 @@ public class ClientSecretCredentials {
 
         HttpServletRequest httpServletRequest = ctx.getRequest();
         String authorizationHeader = (httpServletRequest == null ? null : httpServletRequest.getHeader(HttpHeaders.AUTHORIZATION));
+        log.info("Autth Header: {}", authorizationHeader);
 
         ClientSecretCredentials clientSecretCredentials = null;
         Map<String, List<String>> queryParams = HTTPRequestUtils.getInstance().getQueryParams();
+        log.info("Query String: {}", queryParams);
         ClientKey clientKey = (ClientKey) ctx.get(CLIENT_KEY);
         if (StringUtils.isNotBlank(authorizationHeader)) {
             String[] authSplit = authorizationHeader.split(" ");

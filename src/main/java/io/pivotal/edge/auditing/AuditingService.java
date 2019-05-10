@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
+import static io.pivotal.edge.EdgeApplicationConstants.REQUEST_ID_HEADER_NAME;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.temporal.ChronoField.*;
 
@@ -85,7 +86,7 @@ public class AuditingService {
         log.info("Updating audit log record");
 
         HttpRequest httpRequest = requestEvent.getHttpRequest();
-        Header requestIdHeader = httpRequest.getFirstHeader("x-request-id");
+        Header requestIdHeader = httpRequest.getFirstHeader(REQUEST_ID_HEADER_NAME);
         AuditLogRecord logRecord = this.getAuditLogRecordByIdFromCache(requestIdHeader.getValue());
         if (Objects.nonNull(logRecord)) {
             logRecord.setOriginExecutionTimeMillis(ChronoUnit.MILLIS.between(requestEvent.getStartTime(), requestEvent.getEndTime()));
@@ -94,6 +95,11 @@ public class AuditingService {
             if (Objects.nonNull(httpResponse)) {
                 logRecord.setOriginHttpStatus(httpResponse.getStatusLine().getStatusCode());
             }
+//            CacheResponseStatus cacheResponseStatus = requestEvent.getContext().getCacheResponseStatus();
+//            if (Objects.nonNull(cacheResponseStatus)) {
+//                logRecord.setCacheStatus(cacheResponseStatus.name());
+//            }
+            logRecord.setCacheStatus("NONE");
         }
     }
 

@@ -33,7 +33,7 @@ public class ServiceRouteFilter extends ZuulFilter {
 
     @Override
     public int filterOrder() {
-        return 0;
+        return 90;
     }
 
     @Override

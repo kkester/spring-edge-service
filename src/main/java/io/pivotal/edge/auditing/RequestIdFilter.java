@@ -3,11 +3,9 @@ package io.pivotal.edge.auditing;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
-import java.util.UUID;
 
 import static io.pivotal.edge.EdgeApplicationConstants.REQUEST_ID_HEADER_NAME;
 import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PRE_TYPE;
@@ -16,8 +14,11 @@ import static org.springframework.cloud.netflix.zuul.filters.support.FilterConst
 @Component
 public class RequestIdFilter extends ZuulFilter {
 
-    @Autowired
     private AuditingService auditingService;
+
+    public RequestIdFilter(AuditingService auditingService) {
+        this.auditingService = auditingService;
+    }
 
     @Override
     public String filterType() {
@@ -26,7 +27,7 @@ public class RequestIdFilter extends ZuulFilter {
 
     @Override
     public int filterOrder() {
-        return 10;
+        return 100;
     }
 
     @Override
@@ -45,6 +46,7 @@ public class RequestIdFilter extends ZuulFilter {
             ctx.addZuulRequestHeader(REQUEST_ID_HEADER_NAME, auditLogRecord.getId());
             ctx.addZuulResponseHeader(REQUEST_ID_HEADER_NAME, auditLogRecord.getId());
         }
+
         return null;
     }
 

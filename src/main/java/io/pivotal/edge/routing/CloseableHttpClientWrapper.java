@@ -27,6 +27,7 @@ public class CloseableHttpClientWrapper extends CloseableHttpClient {
     @Override
     protected CloseableHttpResponse doExecute(HttpHost target, HttpRequest request, HttpContext context) throws IOException {
 
+//        HttpCacheContext httpCacheContext = HttpCacheContext.create();
         LocalDateTime now = LocalDateTime.now();
         CloseableHttpResponse httpResponse = null;
         try {
@@ -37,6 +38,7 @@ public class CloseableHttpClientWrapper extends CloseableHttpClient {
                     .endTime(endTime)
                     .host(target)
                     .context(context)
+//                    .context(httpCacheContext)
                     .httpRequest(request)
                     .httpResponse(httpResponse)
                     .startTime(now)

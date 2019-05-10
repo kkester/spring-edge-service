@@ -6,9 +6,6 @@ import org.springframework.cloud.commons.httpclient.DefaultApacheHttpClientFacto
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
-import org.springframework.context.event.ApplicationEventMulticaster;
-import org.springframework.context.event.SimpleApplicationEventMulticaster;
-import org.springframework.core.task.SimpleAsyncTaskExecutor;
 
 @Configuration
 public class HttpClientConfig {
@@ -16,7 +13,7 @@ public class HttpClientConfig {
     @Bean
     @Primary
     public ApacheHttpClientFactory httpClientFactory(EventPublisher eventPublisher) {
-        return new DefaultApacheHttpClientFactory(GatewayHttpClientBuilder.create(eventPublisher));
+        return new DefaultApacheHttpClientFactory(EdgeServiceHttpClientBuilder.create(eventPublisher));
     }
 
 }

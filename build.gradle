@@ -59,6 +59,7 @@ dependencies {
 	compile('org.springframework.boot:spring-boot-starter-data-redis')
 	compile('redis.clients:jedis:2.9.0')
 	compile('org.springframework.data:spring-data-elasticsearch')
+	compile('org.apache.httpcomponents:httpclient-cache:4.5.8')
 
 	compileOnly("org.projectlombok:lombok:${lombokVersion}")
 	annotationProcessor("org.projectlombok:lombok:${lombokVersion}")

@@ -43,7 +43,7 @@ public class SecurityFilter extends ZuulFilter {
 
     @Override
     public int filterOrder() {
-        return 0;
+        return 110;
     }
 
     @Override
@@ -69,7 +69,7 @@ public class SecurityFilter extends ZuulFilter {
         if (!Objects.isNull(route)) {
             ClientKey clientKey = securityService.getClientKeyWithServiceId(clientCreds, route.getId());
             if (Objects.isNull(clientKey)) {
-                log.info("Security Filter: Client Key could not be resolved for credentials");
+                log.info("Security Filter: Client Key could not be resolved for credentials and service id");
                 throw new ZuulException(new SecurityException(), HttpStatus.FORBIDDEN.value(), "Invalid Client Credentials");
             }
             ctx.set(CLIENT_KEY, clientKey);

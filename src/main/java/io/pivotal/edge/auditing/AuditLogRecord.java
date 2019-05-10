@@ -27,5 +27,6 @@ public class AuditLogRecord {
     private String requestDate;
     private Long executionTimeMillis;
     private Long originExecutionTimeMillis;
+    private String cacheStatus;
 
 }

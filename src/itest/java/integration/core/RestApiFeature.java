@@ -9,8 +9,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static io.pivotal.edge.security.SecurityUtil.base64EncodeClientCredentials;
 
@@ -20,16 +20,21 @@ public class RestApiFeature {
 
     private ThreadLocal<ApiRequest> currentRequest = new ThreadLocal<>();
 
-    private List<ResponseResults> responses = new ArrayList<>();
+    private ThreadLocal<List<ResponseResults>> responses = new ThreadLocal<>();
 
     @Value("${application.integration.edge-service-app-host}")
     private String edgeServiceAppHost;
+
+    @Value("${application.integration.throttle}")
+    private Integer throttle;
 
     @Autowired
     private RestTemplateInvoker restTemplateInvoker;
 
     @Async
-    public void getResource(ApiRequest currentRequest) {
+    public void getResource(ApiRequest currentRequest, List<ResponseResults> responses) throws InterruptedException {
+
+        TimeUnit.MILLISECONDS.sleep(throttle);
 
         String url = this.edgeServiceAppHost + currentRequest.getUrl();
         ClientKey clientKey = currentRequest.getClientKey();
@@ -55,7 +60,11 @@ public class RestApiFeature {
     }
 
     public List<ResponseResults> getResponses() {
-        return responses;
+        return responses.get();
+    }
+
+    public void setResponses(List<ResponseResults> responses) {
+        this.responses.set(responses);
     }
 
     public ApiRequest getCurrentRequest() {

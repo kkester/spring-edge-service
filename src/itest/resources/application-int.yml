@@ -6,6 +6,7 @@ spring:
 
 application:
   integration:
+    throttle: 50
     edge-service-app-host: ${edge_service_app_host}
     public-api-key: 208a7016b68340b6b6924edcd96eb958
     confidential-api-key: 11b5c55c731f4a07a6f3a145dda1dd04

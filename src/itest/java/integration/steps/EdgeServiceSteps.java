@@ -16,9 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -63,24 +61,37 @@ public class EdgeServiceSteps {
     public void the_client_issues_GET_for_a_resource_from_a_service(String resource, int count, String serviceId) throws InterruptedException {
         ApiRequest currentRequest = restApiFeature.getCurrentRequest();
         currentRequest.setUrl(String.format("/%s/%s", serviceId,resource));
+        List<ResponseResults> responses = Collections.synchronizedList(new ArrayList<>());
         for (int x = 0; x <= count; x++) {
-            restApiFeature.getResource(currentRequest);
-            TimeUnit.MILLISECONDS.sleep(10);
+            restApiFeature.getResource(currentRequest, responses);
         }
-        while (restApiFeature.getResponses().size() < count) {
-            log.info("Waiting for requests to finish ... {} out of {}", restApiFeature.getResponses().size(), count);
+        while (responses.size() < count) {
+            log.info("Waiting for requests to finish ... {} out of {}", responses.size(), count);
             TimeUnit.MILLISECONDS.sleep(100);
         }
+        restApiFeature.setResponses(responses);
     }
 
     @Then("^the client receives status codes of (\\d+) and (\\d+)$")
     public void the_client_receives_status_codes_of(int status1, int status2) {
         List<HttpStatus> expectedStatus = Arrays.asList(HttpStatus.resolve(status1), HttpStatus.resolve(status2));
-        Set<HttpStatus> results = restApiFeature.getResponses().stream()
+        Set<HttpStatus> results = getHttpStatuses(expectedStatus);
+        assertThat(results).isEmpty();
+    }
+
+    @Then("^the client receives status codes of (\\d+) and (\\d+) and (\\d+)$")
+    public void the_client_receives_status_codes_of(int status1, int status2, int status3) {
+        List<HttpStatus> expectedStatus = Arrays.asList(HttpStatus.resolve(status1), HttpStatus.resolve(status2), HttpStatus.resolve(status3));
+        Set<HttpStatus> results = getHttpStatuses(expectedStatus);
+        assertThat(results).isEmpty();
+    }
+
+    private Set<HttpStatus> getHttpStatuses(List<HttpStatus> expectedStatus) {
+        Collection<ResponseResults> restApiFeatureResponses = Collections.unmodifiableCollection(restApiFeature.getResponses());
+        return restApiFeatureResponses.stream()
                 .filter(r -> !expectedStatus.contains(r.getStatus()))
                 .map(ResponseResults::getStatus)
                 .collect(Collectors.toSet());
-        assertThat(results).isEmpty();
     }
 
 }

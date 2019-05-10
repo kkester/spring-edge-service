@@ -129,7 +129,7 @@ public class EdgeApplicationTest {
 
 		// then
 		assertThat(result.getStatus()).isEqualTo(HttpStatus.OK.value());
-		String requestId = result.getHeader("x-request-id");
+		String requestId = result.getHeader(REQUEST_ID_HEADER_NAME);
 		assertThat(requestId).isNotBlank();
 
 		ArgumentCaptor<AuditLogRecord> auditLogRecordArgumentCaptor = ArgumentCaptor.forClass(AuditLogRecord.class);

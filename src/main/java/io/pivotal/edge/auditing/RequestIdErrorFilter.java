@@ -15,6 +15,9 @@ import static org.springframework.cloud.netflix.zuul.filters.support.FilterConst
 @Component
 public class RequestIdErrorFilter extends ZuulFilter {
 
+    @Autowired
+    private AuditingService auditingService;
+
     @Override
     public String filterType() {
         return ERROR_TYPE;
@@ -22,7 +25,7 @@ public class RequestIdErrorFilter extends ZuulFilter {
 
     @Override
     public int filterOrder() {
-        return 10;
+        return 200;
     }
 
     @Override
@@ -36,10 +39,10 @@ public class RequestIdErrorFilter extends ZuulFilter {
         log.info("Executing Request Id Error Filter");
 
         RequestContext ctx = RequestContext.getCurrentContext();
-        ctx.addZuulResponseHeader("x-request-id", "XXXXX");
-
-        String requestId = ctx.getZuulRequestHeaders().get(REQUEST_ID_HEADER_NAME);
-        ctx.getResponse().addHeader(REQUEST_ID_HEADER_NAME, requestId);
+        AuditLogRecord auditLogRecord = auditingService.getAuditLogRecordFor(ctx.getRequest());
+        if (!Objects.isNull(auditLogRecord)) {
+            ctx.getResponse().addHeader(REQUEST_ID_HEADER_NAME, auditLogRecord.getId());
+        }
 
         return null;
     }
