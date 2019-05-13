@@ -1,6 +1,5 @@
 package io.pivotal.edge.auditing;
 
-import com.netflix.zuul.http.HttpServletRequestWrapper;
 import io.pivotal.edge.events.OriginRequestCompletedEvent;
 import io.pivotal.edge.events.RequestCompletedEvent;
 import io.pivotal.edge.events.RequestInitiatedEvent;
@@ -68,7 +67,7 @@ public class AuditingService {
             record.setRequestDate(DATE_FORMAT.format(requestEvent.getInitiatedTime()));
             record.setMethod(HttpMethod.resolve(httpServletRequest.getMethod()));
             record.setRequestUri(requestUri);
-            record.setHost(httpServletRequest.getRemoteHost()+":"+httpServletRequest.getServerPort());
+            record.setHost(httpServletRequest.getRemoteHost() + ":" + httpServletRequest.getServerPort());
             httpServletRequest.setRequestId(requestId);
             auditLogRecordCache.cache(record);
         }
@@ -122,12 +121,9 @@ public class AuditingService {
 
     public AuditLogRecord getAuditLogRecordFor(HttpServletRequest request) {
         AuditLogRecord auditLogRecord = null;
-        if (request instanceof HttpServletRequestWrapper) {
-            HttpServletRequestWrapper requestWrapper = (HttpServletRequestWrapper)request;
-            if (requestWrapper.getRequest() instanceof EdgeHttpServletRequestWrapper) {
-                EdgeHttpServletRequestWrapper edgeRequestWrapper = (EdgeHttpServletRequestWrapper) requestWrapper.getRequest();
-                auditLogRecord = auditLogRecordCache.findById(edgeRequestWrapper.getRequestId());
-            }
+        EdgeHttpServletRequestWrapper edgeRequestWrapper = EdgeHttpServletRequestWrapper.extractFrom(request);
+        if (Objects.nonNull(edgeRequestWrapper)) {
+            auditLogRecord = auditLogRecordCache.findById(edgeRequestWrapper.getRequestId());
         }
         return auditLogRecord;
     }

@@ -6,9 +6,12 @@ import com.netflix.zuul.exception.ZuulException;
 import com.netflix.zuul.util.HTTPRequestUtils;
 import io.pivotal.edge.events.EventPublisher;
 import io.pivotal.edge.keys.ClientKey;
+import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.cloud.netflix.zuul.filters.Route;
 import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
@@ -75,17 +78,24 @@ public class SecurityFilter extends ZuulFilter {
             ctx.set(CLIENT_KEY, clientKey);
         }
         ctx.set(ROUTE, route);
-        this.stripApiKeyFromQueryParameters(ctx);
+        this.stripClientKeyFrom(ctx, clientCreds);
 
         return null;
     }
 
-    private void stripApiKeyFromQueryParameters(RequestContext requestContext) {
+    private void stripClientKeyFrom(RequestContext requestContext, ClientSecretCredentials clientCreds) {
 
         Map<String, List<String>> queryParams = HTTPRequestUtils.getInstance().getQueryParams();
         if (Objects.nonNull(queryParams)) {
             queryParams.remove(API_KEY_PARAM);
             requestContext.setRequestQueryParams(queryParams);
+        }
+
+        if (StringUtils.equalsIgnoreCase(clientCreds.getRealm(), "BASIC")) {
+            EdgeHttpServletRequestWrapper edgeRequestWrapper = EdgeHttpServletRequestWrapper.extractFrom(requestContext.getRequest());
+            if (Objects.nonNull(edgeRequestWrapper)) {
+                edgeRequestWrapper.remove(HttpHeaders.AUTHORIZATION);
+            }
         }
     }
 

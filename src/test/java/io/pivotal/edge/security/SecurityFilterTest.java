@@ -4,6 +4,7 @@ import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
 import io.pivotal.edge.events.EventPublisher;
 import io.pivotal.edge.keys.ClientKey;
+import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,10 +18,7 @@ import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
 import org.springframework.http.HttpHeaders;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static io.pivotal.edge.security.SecurityUtil.base64EncodeClientCredentials;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,8 +94,12 @@ public class SecurityFilterTest {
         String serviceId = "sid";
 
         HttpServletRequest httpRequest = Mockito.mock(HttpServletRequest.class);
-        when(httpRequest.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn("basic " + base64EncodeClientCredentials(apiKey, secretKey));
-        when(requestContext.getRequest()).thenReturn(httpRequest);
+        when(httpRequest.getHeaderNames()).thenReturn(Collections.enumeration(Arrays.asList(HttpHeaders.AUTHORIZATION)));
+        String basicHeaderValue = "basic " + base64EncodeClientCredentials(apiKey, secretKey);
+        when(httpRequest.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn(basicHeaderValue);
+        when(httpRequest.getHeaders(HttpHeaders.AUTHORIZATION)).thenReturn(Collections.enumeration(Arrays.asList(basicHeaderValue)));
+        EdgeHttpServletRequestWrapper edgeRequestWrapper = new EdgeHttpServletRequestWrapper(httpRequest);
+        when(requestContext.getRequest()).thenReturn(edgeRequestWrapper);
         Route route = Mockito.mock(Route.class);
         when(route.getId()).thenReturn(serviceId);
         when(routeLocator.getMatchingRoute(any())).thenReturn(route);
@@ -118,8 +120,10 @@ public class SecurityFilterTest {
         ArgumentCaptor<SecurityVerifiedEvent> securityEventArgumentCaptor = ArgumentCaptor.forClass(SecurityVerifiedEvent.class);
         verify(eventPublisher).publishEvent(securityEventArgumentCaptor.capture());
         SecurityVerifiedEvent securityVerifiedEvent = securityEventArgumentCaptor.getValue();
-        assertThat(securityVerifiedEvent.getRequest()).isEqualTo(httpRequest);
+        assertThat(securityVerifiedEvent.getRequest()).isEqualTo(edgeRequestWrapper);
         assertThat(securityVerifiedEvent.getClientKey()).isEqualTo(apiKey);
+
+        assertThat(edgeRequestWrapper.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
     }
 
     @After

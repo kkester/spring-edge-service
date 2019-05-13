@@ -32,7 +32,7 @@ public class CloseableHttpClientWrapper extends CloseableHttpClient {
         LocalDateTime now = LocalDateTime.now();
         CloseableHttpResponse httpResponse = null;
         try {
-            httpResponse = closeableHttpClient.execute(target, request, context);
+            httpResponse = closeableHttpClient.execute(target, request, httpCacheContext);
         } finally {
             LocalDateTime endTime = LocalDateTime.now();
             OriginRequestCompletedEvent requestCompletedEvent = OriginRequestCompletedEvent.builder()

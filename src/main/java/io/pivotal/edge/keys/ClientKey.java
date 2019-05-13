@@ -26,14 +26,9 @@ public class ClientKey {
     private String secretKey;
 
     @NotNull
-    private Integer rateLimit;
-
-    @NotNull
-    private TimeUnit rateLimitUnit;
-
-    @NotNull
     private ApplicationType applicationType;
 
+    @NotNull
     private List<ClientService> services;
 
     private LocalDateTime createdOn;
