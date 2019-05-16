@@ -1,52 +1,74 @@
 package io.pivotal.edge.keys;
 
-import io.pivotal.edge.security.ClientSecretCredentials;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import io.pivotal.edge.keys.domain.ClientDetailServiceEntity;
+import io.pivotal.edge.keys.domain.ClientDetailServiceKey;
+import io.pivotal.edge.keys.domain.ClientDetailsEntity;
+import io.pivotal.edge.keys.web.ApplicationType;
+import io.pivotal.edge.keys.web.ClientKey;
+import io.pivotal.edge.keys.web.ClientService;
+import io.pivotal.edge.keys.web.ResourceNotFoundException;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
-import org.springframework.web.servlet.NoHandlerFoundException;
 
-import java.time.LocalDateTime;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class ClientKeyService {
 
-    @Autowired
-    private ClientKeyRepository clientKeyRepository;
+    private ClientKeyCache clientKeyCache;
+
+    public ClientKeyService(ClientKeyCache clientKeyCache) {
+        this.clientKeyCache = clientKeyCache;
+    }
 
     public Collection<ClientKey> findAll() {
-        return clientKeyRepository.findAll();
+        return clientKeyCache.findAll();
     }
 
-    public ClientKey createClientKey(ClientKey clientKeyData) {
+    public ClientKey createClientKey(ClientKey clientKey) {
 
-        String clientKey = UUID.randomUUID().toString().replace("-", "");
+        String clientId = UUID.randomUUID().toString().replace("-", "");
         String secretKey = UUID.randomUUID().toString().replace("-", "");
 
-        clientKeyData.setId(clientKey);
-        clientKeyData.setSecretKey(secretKey);
-        clientKeyData.setCreatedOn(LocalDateTime.now());
-        clientKeyData.setLastUpdated(LocalDateTime.now());
+        ClientDetailsEntity clientDetailsEntity = new ClientDetailsEntity();
+        clientDetailsEntity.setClientId(clientId);
+        clientDetailsEntity.setClientSecret(secretKey);
+        if (ApplicationType.CONFIDENTIAL.equals(clientKey.getApplicationType())) {
+            clientDetailsEntity.setAuthorizedGrantTypes("authorization_code,password,refresh_token,client_credentials");
+        } else if (ApplicationType.NATIVE.equals(clientKey.getApplicationType())) {
+            clientDetailsEntity.setAuthorizedGrantTypes("implicit,password,device_code");
+        } else {
+            clientDetailsEntity.setAuthorizedGrantTypes("implicit,password,authorization_code");
+        }
 
-        clientKeyRepository.save(clientKeyData);
+        List<ClientDetailServiceEntity> clientDetailServiceEntities = new ArrayList<>();
+        clientKey.getServices().forEach( s-> {
+            ClientDetailServiceKey key = new ClientDetailServiceKey();
+            key.setServiceId(s.getId());
+            key.setClientId(clientId);
 
-        return clientKeyData;
+            ClientDetailServiceEntity clientServiceEntity = new ClientDetailServiceEntity();
+            clientServiceEntity.setKey(key);
+            clientServiceEntity.setPath(s.getPath());
+            clientDetailServiceEntities.add(clientServiceEntity);
+        });
+
+        clientKeyCache.save(clientDetailsEntity, clientDetailServiceEntities);
+        return clientKeyCache.findById(clientId).get();
     }
 
-    public ClientKey findById(String id) throws NoHandlerFoundException {
-        Optional<ClientKey> clientKeyOptional = clientKeyRepository.findById(id);
-        if (!clientKeyOptional.isPresent()) {
-            throw new NoHandlerFoundException(HttpMethod.GET.name(), id, new HttpHeaders());
-        }
-        return clientKeyOptional.get();
+    public ClientKey findById(String id) {
+        Optional<ClientKey> clientKeyOptional = clientKeyCache.findById(id);
+        return clientKeyOptional.orElseThrow(() -> new ResourceNotFoundException("Client Key resource could not be found with for an id of %s", id) );
     }
 
     public void deleteById(String id) {
-        clientKeyRepository.deleteById(id);
+        Optional<ClientKey> clientKeyOptional = clientKeyCache.findById(id);
+        if (!clientKeyOptional.isPresent()) {
+            throw new ResourceNotFoundException("Client Key resource could not be found with for an id of %s", id);
+        }
+        clientKeyCache.deleteById(id);
     }
 
 }

@@ -1,7 +1,7 @@
 package integration.core;
 
-import io.pivotal.edge.keys.ApplicationType;
-import io.pivotal.edge.keys.ClientKey;
+import io.pivotal.edge.keys.web.ApplicationType;
+import io.pivotal.edge.keys.web.ClientKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,7 +40,7 @@ public class RestApiFeature {
         ClientKey clientKey = currentRequest.getClientKey();
         HttpHeaders headers = new HttpHeaders();
         if (ApplicationType.PUBLIC.equals(clientKey.getApplicationType())) {
-            url = url + "?apiKey=" + clientKey.getId();
+            url = url + "?apiKey=" + clientKey.getClientId();
         } else {
             String basicCredentials = "basic " + base64EncodeClientCredentials(clientKey);
             headers.add(HttpHeaders.AUTHORIZATION, basicCredentials);

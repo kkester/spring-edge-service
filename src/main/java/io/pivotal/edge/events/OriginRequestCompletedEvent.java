@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 public class OriginRequestCompletedEvent {
 
+    private String requestId;
     private HttpHost host;
     private HttpRequest httpRequest;
     private HttpResponse httpResponse;

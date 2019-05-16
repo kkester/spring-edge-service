@@ -1,6 +1,7 @@
 package io.pivotal.edge.auditing;
 
 import com.netflix.zuul.context.RequestContext;
+import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -35,29 +36,27 @@ public class RequestIdFilterTest {
     @Mock
     private HttpServletRequest httpServletRequest;
 
-    private AuditLogRecord auditLogRecord;
-
     @Before
     public void setUp() {
 
         RequestContext.testSetCurrentContext(requestContext);
-        when(requestContext.getRequest()).thenReturn(httpServletRequest);
 
-        auditLogRecord = new AuditLogRecord();
-        auditLogRecord.setId(REQUEST_ID);
-
-        subject = new RequestIdFilter(auditingService);
+        subject = new RequestIdFilter();
     }
 
     @Test
     public void testRun() {
+
         // given
-        when(auditingService.getAuditLogRecordFor(httpServletRequest)).thenReturn(auditLogRecord);
+        EdgeHttpServletRequestWrapper requestWrapper = new EdgeHttpServletRequestWrapper(httpServletRequest);
+        requestWrapper.setRequestId(REQUEST_ID);
+        when(requestContext.getRequest()).thenReturn(requestWrapper);
 
         // when
         subject.run();
 
         // then
+        verify(requestContext).put(REQUEST_ID_HEADER_NAME, REQUEST_ID);
         ArgumentCaptor<String> argumentCaptor = ArgumentCaptor.forClass(String.class);
         verify(requestContext).addZuulRequestHeader(eq(REQUEST_ID_HEADER_NAME), argumentCaptor.capture());
         assertThat(argumentCaptor.getValue()).isEqualTo(REQUEST_ID);

@@ -2,28 +2,23 @@ package io.pivotal.edge.security;
 
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
-import io.pivotal.edge.events.EventPublisher;
-import io.pivotal.edge.keys.ClientKey;
-import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
+import com.netflix.zuul.monitoring.CounterFactory;
+import io.pivotal.edge.EdgeRequestContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.cloud.netflix.zuul.filters.Route;
 import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
-import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 
-import javax.servlet.http.HttpServletRequest;
-import java.util.*;
-
-import static io.pivotal.edge.security.SecurityUtil.base64EncodeClientCredentials;
+import static io.pivotal.edge.EdgeApplicationConstants.EDGE_REQUEST_CONTEXT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,99 +31,93 @@ public class SecurityFilterTest {
     private RequestContext requestContext;
 
     @Mock
+    private CounterFactory counterFactory;
+
+    @Mock
     private SecurityService securityService;
 
     @Mock
     private RouteLocator routeLocator;
 
-    @Mock
-    private EventPublisher eventPublisher;
-
     @Before
     public void setUp() {
 
         RequestContext.testSetCurrentContext(requestContext);
+        CounterFactory.initialize(counterFactory);
 
-        subject = new SecurityFilter(securityService, routeLocator, eventPublisher);
+        subject = new SecurityFilter(securityService, routeLocator);
     }
 
     @Test
-    public void testRunGivenContextWithApiKeyQueryParameter() throws ZuulException {
+    public void testRun() throws ZuulException {
         // given
         String apiKey = "1234567890";
         String serviceId = "sid";
+        EdgeRequestContext edgeRequestContext = new EdgeRequestContext();
+        edgeRequestContext.setClientId(apiKey);
+        edgeRequestContext.setServiceId(serviceId);
+        when(requestContext.get(EDGE_REQUEST_CONTEXT)).thenReturn(edgeRequestContext);
 
-        Map<String, List<String>> requestQueryParams = new HashMap<>();
-        requestQueryParams.put("apiKey", Arrays.asList(apiKey));
-        when(requestContext.getRequestQueryParams()).thenReturn(requestQueryParams);
         Route route = Mockito.mock(Route.class);
         when(route.getId()).thenReturn(serviceId);
         when(routeLocator.getMatchingRoute(any())).thenReturn(route);
-        when(securityService.getClientKeyWithServiceId(any(), eq(serviceId))).thenReturn(new ClientKey());
+
+        when(securityService.validate(edgeRequestContext)).thenReturn(true);
 
         // when
         Object results = subject.run();
 
         // then
         assertThat(results).isNull();
-        ArgumentCaptor<ClientSecretCredentials> argumentCaptor = ArgumentCaptor.forClass(ClientSecretCredentials.class);
-        verify(securityService).getClientKeyWithServiceId(argumentCaptor.capture(), eq(serviceId));
-        ClientSecretCredentials clientSecretCredentials = argumentCaptor.getValue();
-        assertThat(clientSecretCredentials.getClientKey()).isEqualTo(apiKey);
-
-        ArgumentCaptor<SecurityVerifiedEvent> securityEventArgumentCaptor = ArgumentCaptor.forClass(SecurityVerifiedEvent.class);
-        verify(eventPublisher).publishEvent(securityEventArgumentCaptor.capture());
-        SecurityVerifiedEvent securityVerifiedEvent = securityEventArgumentCaptor.getValue();
-        assertThat(securityVerifiedEvent.getClientKey()).isEqualTo(apiKey);
-
-        ArgumentCaptor<Map<String, List<String>>> requestQueryParamCaptor = ArgumentCaptor.forClass(Map.class);
-        verify(requestContext).setRequestQueryParams(requestQueryParamCaptor.capture());
-        assertThat(requestQueryParamCaptor.getValue()).doesNotContainKeys("apiKey");
+        verify(securityService).validate(edgeRequestContext);
     }
 
     @Test
-    public void testRunGivenContextWithBasicCredentials() throws ZuulException {
+    public void testRunGivenInvalidRequestContext() throws ZuulException {
         // given
         String apiKey = "1234567890";
-        String secretKey = "secretKey";
         String serviceId = "sid";
+        EdgeRequestContext edgeRequestContext = new EdgeRequestContext();
+        edgeRequestContext.setClientId(apiKey);
+        edgeRequestContext.setServiceId(serviceId);
+        when(requestContext.get(EDGE_REQUEST_CONTEXT)).thenReturn(edgeRequestContext);
 
-        HttpServletRequest httpRequest = Mockito.mock(HttpServletRequest.class);
-        when(httpRequest.getHeaderNames()).thenReturn(Collections.enumeration(Arrays.asList(HttpHeaders.AUTHORIZATION)));
-        String basicHeaderValue = "basic " + base64EncodeClientCredentials(apiKey, secretKey);
-        when(httpRequest.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn(basicHeaderValue);
-        when(httpRequest.getHeaders(HttpHeaders.AUTHORIZATION)).thenReturn(Collections.enumeration(Arrays.asList(basicHeaderValue)));
-        EdgeHttpServletRequestWrapper edgeRequestWrapper = new EdgeHttpServletRequestWrapper(httpRequest);
-        when(requestContext.getRequest()).thenReturn(edgeRequestWrapper);
         Route route = Mockito.mock(Route.class);
         when(route.getId()).thenReturn(serviceId);
         when(routeLocator.getMatchingRoute(any())).thenReturn(route);
-        when(securityService.getClientKeyWithServiceId(any(), eq(serviceId))).thenReturn(new ClientKey());
+
+        when(securityService.validate(edgeRequestContext)).thenReturn(false);
 
         // when
-        Object results = subject.run();
+        try {
+            subject.run();
+            fail();
+        } catch (ZuulException e) {
+            assertThat(e.nStatusCode).isEqualTo(HttpStatus.FORBIDDEN.value());
+        }
+    }
 
-        // then
-        assertThat(results).isNull();
-        ArgumentCaptor<ClientSecretCredentials> credentialsArgumentCaptor = ArgumentCaptor.forClass(ClientSecretCredentials.class);
-        verify(securityService).getClientKeyWithServiceId(credentialsArgumentCaptor.capture(), eq(serviceId));
-        ClientSecretCredentials clientSecretCredentials = credentialsArgumentCaptor.getValue();
-        assertThat(clientSecretCredentials.getClientKey()).isEqualTo(apiKey);
-        assertThat(clientSecretCredentials.getSecretKey()).isEqualTo(secretKey);
-        assertThat(clientSecretCredentials.getRealm()).isEqualTo("basic");
+    @Test
+    public void testRunWhenMissingRequestContext() {
+        // given
+        when(requestContext.get(EDGE_REQUEST_CONTEXT)).thenReturn(null);
 
-        ArgumentCaptor<SecurityVerifiedEvent> securityEventArgumentCaptor = ArgumentCaptor.forClass(SecurityVerifiedEvent.class);
-        verify(eventPublisher).publishEvent(securityEventArgumentCaptor.capture());
-        SecurityVerifiedEvent securityVerifiedEvent = securityEventArgumentCaptor.getValue();
-        assertThat(securityVerifiedEvent.getRequest()).isEqualTo(edgeRequestWrapper);
-        assertThat(securityVerifiedEvent.getClientKey()).isEqualTo(apiKey);
+        Route route = Mockito.mock(Route.class);
+        when(routeLocator.getMatchingRoute(any())).thenReturn(route);
 
-        assertThat(edgeRequestWrapper.getHeader(HttpHeaders.AUTHORIZATION)).isNull();
+        // when
+        try {
+            subject.run();
+            fail();
+        } catch (ZuulException e) {
+            assertThat(e.nStatusCode).isEqualTo(HttpStatus.FORBIDDEN.value());
+        }
     }
 
     @After
     public void tearDown() {
         RequestContext.testSetCurrentContext(null);
+        CounterFactory.initialize(null);
     }
 
 }

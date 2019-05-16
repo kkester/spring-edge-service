@@ -1,6 +1,7 @@
 package io.pivotal.edge.security;
 
-import io.pivotal.edge.keys.ClientKey;
+import io.pivotal.edge.keys.domain.ClientDetailsEntity;
+import io.pivotal.edge.keys.web.ClientKey;
 import org.springframework.util.Base64Utils;
 
 public class SecurityUtil {
@@ -11,7 +12,11 @@ public class SecurityUtil {
     }
 
     public static String base64EncodeClientCredentials(ClientKey clientKey) {
-        return base64EncodeClientCredentials(clientKey.getId(), clientKey.getSecretKey());
+        return base64EncodeClientCredentials(clientKey.getClientId(), clientKey.getSecretKey());
+    }
+
+    public static String base64EncodeClientCredentials(ClientDetailsEntity clientKey) {
+        return base64EncodeClientCredentials(clientKey.getClientId(), clientKey.getClientSecret());
     }
 
 }

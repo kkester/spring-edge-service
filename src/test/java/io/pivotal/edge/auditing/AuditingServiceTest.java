@@ -1,6 +1,5 @@
 package io.pivotal.edge.auditing;
 
-import com.netflix.zuul.http.HttpServletRequestWrapper;
 import io.pivotal.edge.events.RequestInitiatedEvent;
 import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
 import org.junit.Before;
@@ -14,8 +13,6 @@ import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
 
 import javax.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
-import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
@@ -32,9 +29,6 @@ public class AuditingServiceTest {
     @Mock
     private RouteLocator routeLocator;
 
-    @Mock
-    private HttpServletRequestWrapper zuulRequestWrapper;
-
     private EdgeHttpServletRequestWrapper edgeRequestWrapper;
 
     @Before
@@ -45,7 +39,6 @@ public class AuditingServiceTest {
         when(mockRequest.getRemoteHost()).thenReturn("domain.net");
         when(mockRequest.getServerPort()).thenReturn(80);
         edgeRequestWrapper = new EdgeHttpServletRequestWrapper(mockRequest);
-        when(zuulRequestWrapper.getRequest()).thenReturn(edgeRequestWrapper);
 
         subject = new AuditingService(auditLogRecordCache, routeLocator);
     }
@@ -72,19 +65,4 @@ public class AuditingServiceTest {
         assertThat(auditLogRecord.getHost()).isEqualTo("domain.net:80");
     }
 
-    @Test
-    public void testGetAuditLogRecord() {
-        // given
-        String requestId = UUID.randomUUID().toString();
-        edgeRequestWrapper.setRequestId(requestId);
-
-        AuditLogRecord expectedRecord = new AuditLogRecord();
-        when(auditLogRecordCache.findById(requestId)).thenReturn(expectedRecord);
-
-        // when
-        AuditLogRecord auditLogRecord = subject.getAuditLogRecordFor(zuulRequestWrapper);
-
-        // then
-        assertThat(auditLogRecord).isSameAs(expectedRecord);
-    }
 }

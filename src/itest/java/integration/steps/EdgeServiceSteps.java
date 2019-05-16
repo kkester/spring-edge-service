@@ -6,8 +6,8 @@ import cucumber.api.java.en.When;
 import integration.core.ApiRequest;
 import integration.core.ResponseResults;
 import integration.core.RestApiFeature;
-import io.pivotal.edge.keys.ApplicationType;
-import io.pivotal.edge.keys.ClientKey;
+import io.pivotal.edge.keys.web.ApplicationType;
+import io.pivotal.edge.keys.web.ClientKey;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -47,10 +47,10 @@ public class EdgeServiceSteps {
         ApplicationType applicationType = ApplicationType.valueOf(clientApiKeyType.toUpperCase());
         if (ApplicationType.PUBLIC.equals(applicationType)) {
             clientKey.setApplicationType(ApplicationType.PUBLIC);
-            clientKey.setId(publicApiKey);
+            clientKey.setClientId(publicApiKey);
         } else if (ApplicationType.CONFIDENTIAL.equals(applicationType)) {
             clientKey.setApplicationType(ApplicationType.CONFIDENTIAL);
-            clientKey.setId(confidentialApiKey);
+            clientKey.setClientId(confidentialApiKey);
             clientKey.setSecretKey(confidentialSecretKey);
         }
         apiRequest.setClientKey(clientKey);
@@ -62,7 +62,7 @@ public class EdgeServiceSteps {
         ApiRequest currentRequest = restApiFeature.getCurrentRequest();
         currentRequest.setUrl(String.format("/%s/%s", serviceId,resource));
         List<ResponseResults> responses = Collections.synchronizedList(new ArrayList<>());
-        for (int x = 0; x <= count; x++) {
+        for (int x = 1; x <= count; x++) {
             restApiFeature.getResource(currentRequest, responses);
         }
         while (responses.size() < count) {
@@ -75,21 +75,20 @@ public class EdgeServiceSteps {
     @Then("^the client receives status codes of (\\d+) and (\\d+)$")
     public void the_client_receives_status_codes_of(int status1, int status2) {
         List<HttpStatus> expectedStatus = Arrays.asList(HttpStatus.resolve(status1), HttpStatus.resolve(status2));
-        Set<HttpStatus> results = getHttpStatuses(expectedStatus);
-        assertThat(results).isEmpty();
+        Set<HttpStatus> results = this.getHttpStatuses();
+        assertThat(results).containsAll(expectedStatus);
     }
 
     @Then("^the client receives status codes of (\\d+) and (\\d+) and (\\d+)$")
     public void the_client_receives_status_codes_of(int status1, int status2, int status3) {
         List<HttpStatus> expectedStatus = Arrays.asList(HttpStatus.resolve(status1), HttpStatus.resolve(status2), HttpStatus.resolve(status3));
-        Set<HttpStatus> results = getHttpStatuses(expectedStatus);
-        assertThat(results).isEmpty();
+        Set<HttpStatus> results = this.getHttpStatuses();
+        assertThat(results).containsAll(expectedStatus);
     }
 
-    private Set<HttpStatus> getHttpStatuses(List<HttpStatus> expectedStatus) {
+    private Set<HttpStatus> getHttpStatuses() {
         Collection<ResponseResults> restApiFeatureResponses = Collections.unmodifiableCollection(restApiFeature.getResponses());
         return restApiFeatureResponses.stream()
-                .filter(r -> !expectedStatus.contains(r.getStatus()))
                 .map(ResponseResults::getStatus)
                 .collect(Collectors.toSet());
     }

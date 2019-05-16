@@ -1,43 +1,33 @@
 package io.pivotal.edge.security;
 
-import io.pivotal.edge.keys.ApplicationType;
-import io.pivotal.edge.keys.ClientKey;
-import io.pivotal.edge.keys.ClientKeyRepository;
-import io.pivotal.edge.keys.ClientService;
+import io.pivotal.edge.EdgeRequestContext;
+import io.pivotal.edge.keys.ClientKeyService;
+import io.pivotal.edge.keys.web.ApplicationType;
+import io.pivotal.edge.keys.web.ClientKey;
+import io.pivotal.edge.keys.web.ClientService;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.stereotype.Service;
 
+import java.util.Collection;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
 public class SecurityService {
 
-    private ClientKeyRepository clientKeyRepository;
-
-    public SecurityService(ClientKeyRepository clientKeyRepository) {
-        this.clientKeyRepository = clientKeyRepository;
-    }
-
-    public ClientKey getClientKeyWithServiceId(ClientSecretCredentials credentials, String serviceId) {
-
-        Optional<ClientKey> clientKeyOptional = clientKeyRepository.findById(credentials.getClientKey());
-        if (!clientKeyOptional.isPresent()) {
-            return null;
-        }
-
-        ClientKey clientKey = clientKeyOptional.get();
-        if (ApplicationType.CONFIDENTIAL.equals(clientKey.getApplicationType()) && !StringUtils.equals(credentials.getSecretKey(), clientKey.getSecretKey())) {
-            return null;
-        }
-
-        Optional<ClientService> serviceOptional = this.findClientService(serviceId, clientKey);
-        return serviceOptional.isPresent() ? clientKey : null;
-    }
-
-    private Optional<ClientService> findClientService(String serviceId, ClientKey clientKey) {
-        return clientKey.getServices() == null ?
+    private Optional<String> findClientService(String serviceId, Collection<String> allowedServices) {
+        return allowedServices == null || serviceId == null ?
                 Optional.empty() :
-                clientKey.getServices().stream().filter(s -> s.getId().equalsIgnoreCase(serviceId)).findFirst();
+                allowedServices.stream().filter(s -> s.equalsIgnoreCase(serviceId)).findFirst();
     }
 
+    public boolean validate(EdgeRequestContext edgeRequestContext) {
+
+        if (ApplicationType.CONFIDENTIAL.name().equalsIgnoreCase(edgeRequestContext.getApplicationType()) && !StringUtils.equals(edgeRequestContext.getClientSecretKey(), edgeRequestContext.getRequestSecretKey())) {
+            return false;
+        }
+
+        return this.findClientService(edgeRequestContext.getServiceId(), edgeRequestContext.getAllowedServices().keySet()).isPresent();
+    }
 }

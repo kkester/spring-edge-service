@@ -3,7 +3,7 @@ package io.pivotal.edge.auditing;
 import io.pivotal.edge.events.OriginRequestCompletedEvent;
 import io.pivotal.edge.events.RequestCompletedEvent;
 import io.pivotal.edge.events.RequestInitiatedEvent;
-import io.pivotal.edge.security.SecurityVerifiedEvent;
+import io.pivotal.edge.events.ClientIdentifiedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationListener;
@@ -27,8 +27,8 @@ public class RequestEventListener implements ApplicationListener<PayloadApplicat
             auditingService.updateAuditLogRecordForPostOriginFrom((OriginRequestCompletedEvent)requestEvent);
         } else if (requestEvent instanceof RequestCompletedEvent) {
             auditingService.finalizeAuditLogRecordFrom((RequestCompletedEvent)requestEvent);
-        } else if (requestEvent instanceof SecurityVerifiedEvent) {
-            auditingService.updateAuditLogRecordForSecurityVerifiedFrom((SecurityVerifiedEvent)requestEvent);
+        } else if (requestEvent instanceof ClientIdentifiedEvent) {
+            auditingService.updateAuditLogRecordForSecurityVerifiedFrom((ClientIdentifiedEvent)requestEvent);
         }
     }
 

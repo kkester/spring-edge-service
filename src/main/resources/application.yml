@@ -6,8 +6,15 @@ spring:
     redis:
       repositories:
         enabled: true
-  autoconfigure:
-    exclude: org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  datasource:
+    platform: mysql
+    initialization-mode: always
+    url: "jdbc:mysql://localhost:3306/db_example?verifyServerCertificate=false&useSSL=false&requireSSL=false&serverTimezone=UTC"
+    username: "root"
+    password: "yourpassword"
 
 elasticsearch:
   clustername: elasticsearch_keithkester

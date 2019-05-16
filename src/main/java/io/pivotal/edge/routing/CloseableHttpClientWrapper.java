@@ -2,6 +2,7 @@ package io.pivotal.edge.routing;
 
 import io.pivotal.edge.events.EventPublisher;
 import io.pivotal.edge.events.OriginRequestCompletedEvent;
+import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
 import org.apache.http.client.cache.HttpCacheContext;
@@ -13,6 +14,8 @@ import org.apache.http.protocol.HttpContext;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+
+import static io.pivotal.edge.EdgeApplicationConstants.REQUEST_ID_HEADER_NAME;
 
 public class CloseableHttpClientWrapper extends CloseableHttpClient {
 
@@ -35,8 +38,10 @@ public class CloseableHttpClientWrapper extends CloseableHttpClient {
             httpResponse = closeableHttpClient.execute(target, request, httpCacheContext);
         } finally {
             LocalDateTime endTime = LocalDateTime.now();
+            Header requestIdHeader = request.getFirstHeader(REQUEST_ID_HEADER_NAME);
             OriginRequestCompletedEvent requestCompletedEvent = OriginRequestCompletedEvent.builder()
                     .endTime(endTime)
+                    .requestId(requestIdHeader == null ? null : requestIdHeader.getValue())
                     .host(target)
                     .context(httpCacheContext)
                     .httpRequest(request)

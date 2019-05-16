@@ -1,13 +1,11 @@
 package io.pivotal.edge.auditing;
 
+import io.pivotal.edge.events.ClientIdentifiedEvent;
 import io.pivotal.edge.events.OriginRequestCompletedEvent;
 import io.pivotal.edge.events.RequestCompletedEvent;
 import io.pivotal.edge.events.RequestInitiatedEvent;
-import io.pivotal.edge.security.SecurityVerifiedEvent;
 import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.Header;
-import org.apache.http.HttpRequest;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.cache.CacheResponseStatus;
 import org.springframework.cloud.netflix.zuul.filters.Route;
@@ -15,7 +13,6 @@ import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Service;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
@@ -23,7 +20,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.Objects;
 import java.util.UUID;
 
-import static io.pivotal.edge.EdgeApplicationConstants.REQUEST_ID_HEADER_NAME;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.temporal.ChronoField.*;
 
@@ -77,28 +73,28 @@ public class AuditingService {
 
         log.info("Updating audit log record");
 
-        HttpRequest httpRequest = requestEvent.getHttpRequest();
-        Header requestIdHeader = httpRequest.getFirstHeader(REQUEST_ID_HEADER_NAME);
-        AuditLogRecord logRecord = auditLogRecordCache.findById(requestIdHeader.getValue());
-        if (Objects.nonNull(logRecord)) {
-            logRecord.setOriginExecutionTimeMillis(ChronoUnit.MILLIS.between(requestEvent.getStartTime(), requestEvent.getEndTime()));
-            logRecord.setOriginHost(requestEvent.getHost().toHostString());
-            HttpResponse httpResponse = requestEvent.getHttpResponse();
-            if (Objects.nonNull(httpResponse)) {
-                logRecord.setOriginHttpStatus(httpResponse.getStatusLine().getStatusCode());
-            }
-            CacheResponseStatus cacheResponseStatus = requestEvent.getContext().getCacheResponseStatus();
-            if (Objects.nonNull(cacheResponseStatus)) {
-                logRecord.setCacheStatus(cacheResponseStatus.name());
-            } else {
-                logRecord.setCacheStatus("NONE");
-            }
+        AuditLogRecord logRecord = auditLogRecordCache.findById(requestEvent.getRequestId());
+        if (Objects.isNull(logRecord)) {
+            return;
+        }
+
+        logRecord.setOriginExecutionTimeMillis(ChronoUnit.MILLIS.between(requestEvent.getStartTime(), requestEvent.getEndTime()));
+        logRecord.setOriginHost(requestEvent.getHost().toHostString());
+        HttpResponse httpResponse = requestEvent.getHttpResponse();
+        if (Objects.nonNull(httpResponse)) {
+            logRecord.setOriginHttpStatus(httpResponse.getStatusLine().getStatusCode());
+        }
+        CacheResponseStatus cacheResponseStatus = requestEvent.getContext().getCacheResponseStatus();
+        if (Objects.nonNull(cacheResponseStatus)) {
+            logRecord.setCacheStatus(cacheResponseStatus.name());
+        } else {
+            logRecord.setCacheStatus("NONE");
         }
     }
 
-    public void updateAuditLogRecordForSecurityVerifiedFrom(SecurityVerifiedEvent requestEvent) {
+    public void updateAuditLogRecordForSecurityVerifiedFrom(ClientIdentifiedEvent requestEvent) {
 
-        AuditLogRecord auditLogRecord = this.getAuditLogRecordFor(requestEvent.getRequest());
+        AuditLogRecord auditLogRecord = auditLogRecordCache.findById(requestEvent.getRequestId());
         if (Objects.nonNull(auditLogRecord)) {
             auditLogRecord.setClientKey(requestEvent.getClientKey());
         }
@@ -119,13 +115,8 @@ public class AuditingService {
         }
     }
 
-    public AuditLogRecord getAuditLogRecordFor(HttpServletRequest request) {
-        AuditLogRecord auditLogRecord = null;
-        EdgeHttpServletRequestWrapper edgeRequestWrapper = EdgeHttpServletRequestWrapper.extractFrom(request);
-        if (Objects.nonNull(edgeRequestWrapper)) {
-            auditLogRecord = auditLogRecordCache.findById(edgeRequestWrapper.getRequestId());
-        }
-        return auditLogRecord;
+    public AuditLogRecord getAuditLogRecordById(String requestId) {
+        return auditLogRecordCache.findById(requestId);
     }
 
 }

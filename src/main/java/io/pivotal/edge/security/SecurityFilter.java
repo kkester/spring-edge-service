@@ -3,24 +3,18 @@ package io.pivotal.edge.security;
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
-import com.netflix.zuul.util.HTTPRequestUtils;
-import io.pivotal.edge.events.EventPublisher;
-import io.pivotal.edge.keys.ClientKey;
-import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
+import io.pivotal.edge.EdgeRequestContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.cloud.netflix.zuul.filters.Route;
 import org.springframework.cloud.netflix.zuul.filters.RouteLocator;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
-import static io.pivotal.edge.EdgeApplicationConstants.*;
+import static io.pivotal.edge.EdgeApplicationConstants.EDGE_REQUEST_CONTEXT;
 import static org.springframework.cloud.netflix.zuul.filters.support.FilterConstants.PRE_TYPE;
 
 @Component
@@ -31,12 +25,9 @@ public class SecurityFilter extends ZuulFilter {
 
     private RouteLocator routeLocator;
 
-    private EventPublisher eventPublisher;
-
-    public SecurityFilter(SecurityService securityService, RouteLocator routeLocator, EventPublisher eventPublisher) {
+    public SecurityFilter(SecurityService securityService, RouteLocator routeLocator) {
         this.securityService = securityService;
         this.routeLocator = routeLocator;
-        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -60,44 +51,27 @@ public class SecurityFilter extends ZuulFilter {
         log.info("Executing Security Filter");
 
         RequestContext ctx = RequestContext.getCurrentContext();
-        ClientSecretCredentials clientCreds = ClientSecretCredentials.createFrom(ctx);
-        if (Objects.isNull(clientCreds)) {
+        Route route = routeLocator.getMatchingRoute(this.getRequestUriFrom(ctx));
+        if (Objects.isNull(route)) {
+            return null;
+        }
+
+        EdgeRequestContext edgeRequestContext = (EdgeRequestContext)ctx.get(EDGE_REQUEST_CONTEXT);
+        if (Objects.isNull(edgeRequestContext) || StringUtils.isEmpty(edgeRequestContext.getClientId())) {
             log.info("Security Filter: Client Credentials could not be resolved");
             throw new ZuulException(new SecurityException(), HttpStatus.FORBIDDEN.value(), "Invalid Client Credentials");
         }
 
-        eventPublisher.publishEvent(SecurityVerifiedEvent.builder().request(ctx.getRequest()).clientKey(clientCreds.getClientKey()).build());
-
-        Route route = routeLocator.getMatchingRoute(this.getRequestUriFrom(ctx));
-        if (!Objects.isNull(route)) {
-            ClientKey clientKey = securityService.getClientKeyWithServiceId(clientCreds, route.getId());
-            if (Objects.isNull(clientKey)) {
-                log.info("Security Filter: Client Key could not be resolved for credentials and service id");
-                throw new ZuulException(new SecurityException(), HttpStatus.FORBIDDEN.value(), "Invalid Client Credentials");
-            }
-            ctx.set(CLIENT_KEY, clientKey);
-        }
-        ctx.set(ROUTE, route);
-        this.stripClientKeyFrom(ctx, clientCreds);
+        edgeRequestContext.setServiceId(route.getId());
+        if (!securityService.validate(edgeRequestContext)) {
+            log.info("Security Filter: Client Key could not be resolved for credentials and service id");
+            throw new ZuulException(new SecurityException(), HttpStatus.FORBIDDEN.value(), "Invalid Client Credentials");
+        };
 
         return null;
     }
 
-    private void stripClientKeyFrom(RequestContext requestContext, ClientSecretCredentials clientCreds) {
 
-        Map<String, List<String>> queryParams = HTTPRequestUtils.getInstance().getQueryParams();
-        if (Objects.nonNull(queryParams)) {
-            queryParams.remove(API_KEY_PARAM);
-            requestContext.setRequestQueryParams(queryParams);
-        }
-
-        if (StringUtils.equalsIgnoreCase(clientCreds.getRealm(), "BASIC")) {
-            EdgeHttpServletRequestWrapper edgeRequestWrapper = EdgeHttpServletRequestWrapper.extractFrom(requestContext.getRequest());
-            if (Objects.nonNull(edgeRequestWrapper)) {
-                edgeRequestWrapper.remove(HttpHeaders.AUTHORIZATION);
-            }
-        }
-    }
 
     private String getRequestUriFrom(RequestContext ctx) {
         HttpServletRequest request = ctx.getRequest();

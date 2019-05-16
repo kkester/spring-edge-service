@@ -1,5 +1,6 @@
-package io.pivotal.edge.keys;
+package io.pivotal.edge.keys.web;
 
+import io.pivotal.edge.keys.ClientKeyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -32,13 +33,12 @@ public class ClientKeyController {
     public ResponseEntity<ClientKey> createClientKey(@RequestBody @Valid ClientKey clientKeyData, UriComponentsBuilder uriBuilder) {
 
         ClientKey clientKey = clientKeyService.createClientKey(clientKeyData);
-
-        URI location = uriBuilder.path("/client-keys/{0}").build(clientKey.getId());
+        URI location = uriBuilder.path("/client-keys/{0}").build(clientKey.getClientId());
         return ResponseEntity.status(HttpStatus.CREATED).location(location).body(clientKey);
     }
 
     @DeleteMapping(value = "/{id}")
-    public void deleteClientKey(@PathVariable String id) {
+    public void deleteClientKey(@PathVariable String id) throws NoHandlerFoundException {
         clientKeyService.deleteById(id);
     }
 

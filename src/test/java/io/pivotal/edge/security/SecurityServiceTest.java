@@ -1,51 +1,81 @@
 package io.pivotal.edge.security;
 
-import io.pivotal.edge.keys.ApplicationType;
-import io.pivotal.edge.keys.ClientKey;
-import io.pivotal.edge.keys.ClientKeyRepository;
-import io.pivotal.edge.keys.ClientService;
+import io.pivotal.edge.EdgeRequestContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.Arrays;
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SecurityServiceTest {
 
+    private static final String VALID_SERVICE_ID = "VALID_SERVICE_ID";
+
+    private static final String INVALID_SERVICE_ID = "INVALID_SERVICE_ID";
+
     private SecurityService subject;
 
-    @Mock
-    private ClientKeyRepository clientKeyRepository;
+    private Map<String, String> allowedServices = new HashMap<>();
 
     @Before
     public void setUp() {
-        subject = new SecurityService(clientKeyRepository);
+        subject = new SecurityService();
     }
 
     @Test
-    public void testGetClientKeyWithServiceId() {
+    public void testValidatePublicClientKey() {
         // given
-        ClientSecretCredentials clientCredentials = Mockito.mock(ClientSecretCredentials.class);
-        when(clientCredentials.getClientKey()).thenReturn("ckey");
-        ClientKey clientKey = new ClientKey();
-        clientKey.setApplicationType(ApplicationType.PUBLIC);
-        ClientService service = new ClientService();
-        service.setId("sid");
-        clientKey.setServices(Arrays.asList(service));
-        when(clientKeyRepository.findById("ckey")).thenReturn(Optional.of(clientKey));
+        allowedServices.put(VALID_SERVICE_ID, null);
+        EdgeRequestContext edgeRequestContext = new EdgeRequestContext();
+        edgeRequestContext.setApplicationType("public");
+        edgeRequestContext.setServiceId(VALID_SERVICE_ID);
+        edgeRequestContext.setAllowedServices(allowedServices);
 
         // when
-        ClientKey result = subject.getClientKeyWithServiceId(clientCredentials, "sid");
+        boolean result = subject.validate(edgeRequestContext);
 
         // then
-        assertThat(result).isSameAs(clientKey);
+        assertThat(result).isTrue();
+    }
+
+    @Test
+    public void testValidateInvalidPublicClientKey() {
+        // given
+        allowedServices.put(VALID_SERVICE_ID, null);
+        EdgeRequestContext edgeRequestContext = new EdgeRequestContext();
+        edgeRequestContext.setApplicationType("public");
+        edgeRequestContext.setServiceId(INVALID_SERVICE_ID);
+        edgeRequestContext.setAllowedServices(allowedServices);
+
+        // when
+        boolean result = subject.validate(edgeRequestContext);
+
+        // then
+        assertThat(result).isFalse();
+    }
+
+    @Test
+    public void testValidateInvalidConfidentialClientKey() {
+        // given
+        String secretKey = "secretKey";
+        allowedServices.put(VALID_SERVICE_ID, null);
+        EdgeRequestContext edgeRequestContext = new EdgeRequestContext();
+        edgeRequestContext.setApplicationType("confidential");
+        edgeRequestContext.setClientSecretKey("clientSecretKey");
+        edgeRequestContext.setRequestSecretKey(secretKey);
+        edgeRequestContext.setServiceId(VALID_SERVICE_ID);
+        edgeRequestContext.setAllowedServices(allowedServices);
+
+        // when
+        boolean result = subject.validate(edgeRequestContext);
+
+        // then
+        assertThat(result).isFalse();
     }
 }

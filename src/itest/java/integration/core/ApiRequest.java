@@ -1,12 +1,8 @@
 package integration.core;
 
-import io.pivotal.edge.keys.ClientKey;
-import io.pivotal.edge.security.ClientSecretCredentials;
-import lombok.Builder;
+import io.pivotal.edge.keys.web.ClientKey;
 import lombok.Data;
-import lombok.Value;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 
 @Data
 public class ApiRequest {

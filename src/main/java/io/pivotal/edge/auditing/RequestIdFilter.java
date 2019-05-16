@@ -2,6 +2,7 @@ package io.pivotal.edge.auditing;
 
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
+import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -13,12 +14,6 @@ import static org.springframework.cloud.netflix.zuul.filters.support.FilterConst
 @Slf4j
 @Component
 public class RequestIdFilter extends ZuulFilter {
-
-    private AuditingService auditingService;
-
-    public RequestIdFilter(AuditingService auditingService) {
-        this.auditingService = auditingService;
-    }
 
     @Override
     public String filterType() {
@@ -41,10 +36,12 @@ public class RequestIdFilter extends ZuulFilter {
         log.info("Executing Request Id Filter");
 
         RequestContext ctx = RequestContext.getCurrentContext();
-        AuditLogRecord auditLogRecord = auditingService.getAuditLogRecordFor(ctx.getRequest());
-        if (!Objects.isNull(auditLogRecord)) {
-            ctx.addZuulRequestHeader(REQUEST_ID_HEADER_NAME, auditLogRecord.getId());
-            ctx.addZuulResponseHeader(REQUEST_ID_HEADER_NAME, auditLogRecord.getId());
+        EdgeHttpServletRequestWrapper edgeRequestWrapper = EdgeHttpServletRequestWrapper.extractFrom(ctx.getRequest());
+        if (!Objects.isNull(edgeRequestWrapper)) {
+            String requestId = edgeRequestWrapper.getRequestId();
+            ctx.put(REQUEST_ID_HEADER_NAME, requestId);
+            ctx.addZuulRequestHeader(REQUEST_ID_HEADER_NAME, requestId);
+            ctx.addZuulResponseHeader(REQUEST_ID_HEADER_NAME, requestId);
         }
 
         return null;

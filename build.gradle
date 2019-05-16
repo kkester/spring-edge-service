@@ -59,6 +59,9 @@ dependencies {
 	compile('org.springframework.boot:spring-boot-starter-data-redis')
 	compile('redis.clients:jedis:2.9.0')
 	compile('org.springframework.data:spring-data-elasticsearch')
+	compile('mysql:mysql-connector-java')
+	compile('org.springframework.security.oauth:spring-security-oauth2:2.3.4.RELEASE')
+	compile('org.springframework.security:spring-security-jwt:1.0.10.RELEASE')
 	compile('org.apache.httpcomponents:httpclient-cache:4.5.8')
 
 	compileOnly("org.projectlombok:lombok:${lombokVersion}")

@@ -1,7 +1,7 @@
 package io.pivotal.edge.routing;
 
 import com.netflix.zuul.context.RequestContext;
-import io.pivotal.edge.keys.ClientService;
+import io.pivotal.edge.EdgeRequestContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -9,12 +9,13 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.cloud.netflix.zuul.filters.Route;
 
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.HashMap;
+import java.util.Map;
 
-import static io.pivotal.edge.EdgeApplicationConstants.ROUTE;
+import static io.pivotal.edge.EdgeApplicationConstants.EDGE_REQUEST_CONTEXT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
@@ -28,33 +29,25 @@ public class ServiceRouteFilterTest {
     @Mock
     private RequestContext requestContext;
 
-    @Mock
-    private ClientRoutingService clientRoutingService;
-
-    @Mock
-    private Route route;
-
-    private ClientService clientService;
+    private Map<String, String> allowedServices = new HashMap<>();
 
     @Before
     public void setUp() {
 
         RequestContext.testSetCurrentContext(requestContext);
-        when(requestContext.get(ROUTE)).thenReturn(route);
 
-        when(route.getId()).thenReturn(SERVICE_ID);
-        clientService = new ClientService();
-        clientService.setId(SERVICE_ID);
-        when(clientRoutingService.getClientServiceWithServiceId(any(), eq(SERVICE_ID))).thenReturn(clientService);
-
-        subject = new ServiceRouteFilter(clientRoutingService);
+        subject = new ServiceRouteFilter();
     }
 
     @Test
     public void testRun() throws URISyntaxException {
         // given
         String path = "https://somedomain.net";
-        clientService.setPath(path);
+        allowedServices.put(SERVICE_ID, path);
+        EdgeRequestContext edgeRequestContext = new EdgeRequestContext();
+        edgeRequestContext.setServiceId(SERVICE_ID);
+        edgeRequestContext.setAllowedServices(allowedServices);
+        when(requestContext.get(EDGE_REQUEST_CONTEXT)).thenReturn(edgeRequestContext);
 
         // when
         subject.run();

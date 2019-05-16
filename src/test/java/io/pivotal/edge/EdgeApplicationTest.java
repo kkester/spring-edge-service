@@ -3,15 +3,13 @@ package io.pivotal.edge;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import io.pivotal.edge.auditing.AuditLogRecord;
 import io.pivotal.edge.auditing.AuditLogRecordRepository;
-import io.pivotal.edge.keys.ApplicationType;
-import io.pivotal.edge.keys.ClientKey;
-import io.pivotal.edge.keys.ClientKeyRepository;
-import io.pivotal.edge.keys.ClientService;
+import io.pivotal.edge.keys.domain.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -57,34 +55,39 @@ public class EdgeApplicationTest {
 	private AuditLogRecordRepository auditLogRecordRepository;
 
 	@MockBean
-	private ClientKeyRepository clientKeyRepository;
+	private ClientDetailsEntityRepository clientDetailsRepository;
 
-	private ClientKey confidentialClientKey;
+	@MockBean
+	private ClientDetailServiceEntityRepository clientDetailServiceEntityRepository;
 
-	private ClientKey publicClientKey;
+	private ClientDetailsEntity confidentialClientKey;
+
+	private ClientDetailsEntity publicClientKey;
 
 	@Before
 	public void setUp() {
 		wireMockServer.start();
 		configureFor("localhost", wireMockServer.port());
 
-		confidentialClientKey = new ClientKey();
-		confidentialClientKey.setApplicationType(ApplicationType.CONFIDENTIAL);
-		confidentialClientKey.setId(UUID.randomUUID().toString());
-		confidentialClientKey.setSecretKey(UUID.randomUUID().toString());
+		confidentialClientKey = new ClientDetailsEntity();
+		confidentialClientKey.setAuthorizedGrantTypes("client_credentials");
+		confidentialClientKey.setClientId(UUID.randomUUID().toString());
+		confidentialClientKey.setClientSecret(UUID.randomUUID().toString());
 
-		publicClientKey = new ClientKey();
-		publicClientKey.setApplicationType(ApplicationType.PUBLIC);
-		publicClientKey.setId(UUID.randomUUID().toString());
-		publicClientKey.setSecretKey(UUID.randomUUID().toString());
+		publicClientKey = new ClientDetailsEntity();
+		publicClientKey.setAuthorizedGrantTypes("implicit");
+		publicClientKey.setClientId(UUID.randomUUID().toString());
+		publicClientKey.setClientSecret(UUID.randomUUID().toString());
 
-		ClientService service = new ClientService();
-		service.setId("test");
-		publicClientKey.setServices(Arrays.asList(service));
-		confidentialClientKey.setServices(Arrays.asList(service));
+		ClientDetailServiceEntity service = new ClientDetailServiceEntity();
+		ClientDetailServiceKey key = new ClientDetailServiceKey();
+		key.setServiceId("test");
+		service.setKey(key);
 
-		when(clientKeyRepository.findById(publicClientKey.getId())).thenReturn(Optional.of(publicClientKey));
-		when(clientKeyRepository.findById(confidentialClientKey.getId())).thenReturn(Optional.of(confidentialClientKey));
+		when(clientDetailsRepository.findById(publicClientKey.getClientId())).thenReturn(Optional.of(publicClientKey));
+		when(clientDetailsRepository.findById(confidentialClientKey.getClientId())).thenReturn(Optional.of(confidentialClientKey));
+		when(clientDetailServiceEntityRepository.findAllByKeyClientId(publicClientKey.getClientId())).thenReturn(Arrays.asList(service));
+		when(clientDetailServiceEntityRepository.findAllByKeyClientId(confidentialClientKey.getClientId())).thenReturn(Arrays.asList(service));
 	}
 
 	@Test
@@ -96,7 +99,7 @@ public class EdgeApplicationTest {
 
 		// when
 		RequestBuilder requestBuilder = MockMvcRequestBuilders
-				.get("/test/resource?apiKey={0}", publicClientKey.getId())
+				.get("/test/resource?apiKey={0}", publicClientKey.getClientId())
 				.accept(MediaType.APPLICATION_JSON);
 		MockHttpServletResponse result = mockMvc.perform(requestBuilder)
 				.andReturn()
@@ -110,7 +113,7 @@ public class EdgeApplicationTest {
 		ArgumentCaptor<AuditLogRecord> auditLogRecordArgumentCaptor = ArgumentCaptor.forClass(AuditLogRecord.class);
 		verify(auditLogRecordRepository).save(auditLogRecordArgumentCaptor.capture());
 		AuditLogRecord auditLogRecord = auditLogRecordArgumentCaptor.getValue();
-		assertThat(auditLogRecord.getClientKey()).isEqualTo(publicClientKey.getId());
+		assertThat(auditLogRecord.getClientKey()).isEqualTo(publicClientKey.getClientId());
 	}
 
 	@Test
@@ -135,7 +138,7 @@ public class EdgeApplicationTest {
 		ArgumentCaptor<AuditLogRecord> auditLogRecordArgumentCaptor = ArgumentCaptor.forClass(AuditLogRecord.class);
 		verify(auditLogRecordRepository).save(auditLogRecordArgumentCaptor.capture());
 		AuditLogRecord auditLogRecord = auditLogRecordArgumentCaptor.getValue();
-		assertThat(auditLogRecord.getClientKey()).isEqualTo(confidentialClientKey.getId());
+		assertThat(auditLogRecord.getClientKey()).isEqualTo(confidentialClientKey.getClientId());
 	}
 
 	@After

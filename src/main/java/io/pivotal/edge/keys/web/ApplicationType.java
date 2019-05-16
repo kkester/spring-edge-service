@@ -1,4 +1,4 @@
-package io.pivotal.edge.keys;
+package io.pivotal.edge.keys.web;
 
 public enum ApplicationType {
 
