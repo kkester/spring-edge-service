@@ -1,17 +1,16 @@
 package io.pivotal.edge.security;
 
-import io.pivotal.edge.EdgeRequestContext;
-import io.pivotal.edge.keys.ClientKeyService;
+import io.pivotal.edge.routing.EdgeRequestContext;
 import io.pivotal.edge.keys.web.ApplicationType;
-import io.pivotal.edge.keys.web.ClientKey;
-import io.pivotal.edge.keys.web.ClientService;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.Objects;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class SecurityService {
@@ -23,11 +22,7 @@ public class SecurityService {
     }
 
     public boolean validate(EdgeRequestContext edgeRequestContext) {
-
-        if (ApplicationType.CONFIDENTIAL.name().equalsIgnoreCase(edgeRequestContext.getApplicationType()) && !StringUtils.equals(edgeRequestContext.getClientSecretKey(), edgeRequestContext.getRequestSecretKey())) {
-            return false;
-        }
-
         return this.findClientService(edgeRequestContext.getServiceId(), edgeRequestContext.getAllowedServices().keySet()).isPresent();
     }
+
 }

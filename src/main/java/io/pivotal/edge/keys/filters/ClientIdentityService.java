@@ -2,7 +2,13 @@ package io.pivotal.edge.keys.filters;
 
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.util.HTTPRequestUtils;
-import io.pivotal.edge.EdgeRequestContext;
+import io.pivotal.edge.keys.ClientKeyConverter;
+import io.pivotal.edge.keys.domain.ClientDetailsEntity;
+import io.pivotal.edge.keys.domain.ClientDetailsEntityRepository;
+import io.pivotal.edge.keys.domain.ClientDetailsServiceEntity;
+import io.pivotal.edge.keys.domain.ClientDetailsServiceEntityRepository;
+import io.pivotal.edge.keys.web.ClientKey;
+import io.pivotal.edge.routing.EdgeRequestContext;
 import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.http.HttpHeaders;
@@ -11,15 +17,41 @@ import org.springframework.util.Base64Utils;
 import org.springframework.util.CollectionUtils;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static io.pivotal.edge.EdgeApplicationConstants.API_KEY_PARAM;
 import static io.pivotal.edge.EdgeApplicationConstants.REQUEST_ID_HEADER_NAME;
 
 @Service
 public class ClientIdentityService {
+
+    private ClientKeyCache clientKeyCache;
+
+    private ClientKeyConverter clientKeyConverter;
+
+    private ClientDetailsEntityRepository clientDetailsRepository;
+
+    private ClientDetailsServiceEntityRepository clientDetailsServiceEntityRepository;
+
+    public ClientIdentityService(ClientKeyCache clientKeyCache, ClientKeyConverter clientKeyConverter, ClientDetailsEntityRepository clientDetailsRepository, ClientDetailsServiceEntityRepository clientDetailsServiceEntityRepository) {
+        this.clientKeyCache = clientKeyCache;
+        this.clientKeyConverter = clientKeyConverter;
+        this.clientDetailsRepository = clientDetailsRepository;
+        this.clientDetailsServiceEntityRepository = clientDetailsServiceEntityRepository;
+    }
+
+    public ClientKey findCachedClientKeyById(String clientId) {
+        return clientKeyCache.findById(clientId).orElseGet(() -> {
+            ClientKey clientKey = null;
+            Optional<ClientDetailsEntity> clientDetailsEntityOptional = clientDetailsRepository.findById(clientId);
+            if (clientDetailsEntityOptional.isPresent()) {
+                List<ClientDetailsServiceEntity> serviceEntities = clientDetailsServiceEntityRepository.findAllByKeyClientId(clientId);
+                clientKey = clientKeyConverter.convertClientDetailsEntity(clientDetailsEntityOptional.get(), serviceEntities);
+                clientKeyCache.cache(clientKey);
+            }
+            return clientKey;
+        });
+    }
 
     public EdgeRequestContext createEdgeRequestContextFrom(RequestContext ctx) {
 
@@ -55,5 +87,4 @@ public class ClientIdentityService {
         edgeRequestContext.setRealm(realm);
         return edgeRequestContext;
     }
-
 }

@@ -6,9 +6,9 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 
 @Repository
-public interface ClientDetailServiceEntityRepository extends JpaRepository<ClientDetailServiceEntity,ClientDetailServiceKey> {
+public interface ClientDetailsServiceEntityRepository extends JpaRepository<ClientDetailsServiceEntity, ClientDetailsServiceKey> {
 
-    List<ClientDetailServiceEntity> findAllByKeyClientId(String clientId);
+    List<ClientDetailsServiceEntity> findAllByKeyClientId(String clientId);
 
     void deleteAllByKeyClientId(String clientId);
 

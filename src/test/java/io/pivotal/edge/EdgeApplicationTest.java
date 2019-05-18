@@ -18,6 +18,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.ContextConfiguration;
@@ -58,9 +59,15 @@ public class EdgeApplicationTest {
 	private ClientDetailsEntityRepository clientDetailsRepository;
 
 	@MockBean
-	private ClientDetailServiceEntityRepository clientDetailServiceEntityRepository;
+	private ClientDetailsServiceEntityRepository clientDetailsServiceEntityRepository;
+
+	@Autowired
+	@Mock
+	private BCryptPasswordEncoder passwordEncoder;
 
 	private ClientDetailsEntity confidentialClientKey;
+
+	private String confidentialSecretKey;
 
 	private ClientDetailsEntity publicClientKey;
 
@@ -72,22 +79,23 @@ public class EdgeApplicationTest {
 		confidentialClientKey = new ClientDetailsEntity();
 		confidentialClientKey.setAuthorizedGrantTypes("client_credentials");
 		confidentialClientKey.setClientId(UUID.randomUUID().toString());
-		confidentialClientKey.setClientSecret(UUID.randomUUID().toString());
+		confidentialSecretKey = UUID.randomUUID().toString();
+		confidentialClientKey.setClientSecret(passwordEncoder.encode(confidentialSecretKey));
 
 		publicClientKey = new ClientDetailsEntity();
 		publicClientKey.setAuthorizedGrantTypes("implicit");
 		publicClientKey.setClientId(UUID.randomUUID().toString());
 		publicClientKey.setClientSecret(UUID.randomUUID().toString());
 
-		ClientDetailServiceEntity service = new ClientDetailServiceEntity();
-		ClientDetailServiceKey key = new ClientDetailServiceKey();
+		ClientDetailsServiceEntity service = new ClientDetailsServiceEntity();
+		ClientDetailsServiceKey key = new ClientDetailsServiceKey();
 		key.setServiceId("test");
 		service.setKey(key);
 
 		when(clientDetailsRepository.findById(publicClientKey.getClientId())).thenReturn(Optional.of(publicClientKey));
 		when(clientDetailsRepository.findById(confidentialClientKey.getClientId())).thenReturn(Optional.of(confidentialClientKey));
-		when(clientDetailServiceEntityRepository.findAllByKeyClientId(publicClientKey.getClientId())).thenReturn(Arrays.asList(service));
-		when(clientDetailServiceEntityRepository.findAllByKeyClientId(confidentialClientKey.getClientId())).thenReturn(Arrays.asList(service));
+		when(clientDetailsServiceEntityRepository.findAllByKeyClientId(publicClientKey.getClientId())).thenReturn(Arrays.asList(service));
+		when(clientDetailsServiceEntityRepository.findAllByKeyClientId(confidentialClientKey.getClientId())).thenReturn(Arrays.asList(service));
 	}
 
 	@Test
@@ -95,7 +103,7 @@ public class EdgeApplicationTest {
 
 		// given
 		givenThat(get(urlEqualTo("/resource"))
-				.willReturn(aResponse().withStatus(200)));
+				.willReturn(aResponse().withStatus(HttpStatus.OK.value())));
 
 		// when
 		RequestBuilder requestBuilder = MockMvcRequestBuilders
@@ -117,17 +125,43 @@ public class EdgeApplicationTest {
 	}
 
 	@Test
+	public void shouldHandleErrorForPublicClientKey_WhenOriginUnavailable() throws Exception {
+
+		// given
+		givenThat(get(urlEqualTo("/resource"))
+				.willReturn(aResponse().withStatus(HttpStatus.SERVICE_UNAVAILABLE.value())));
+
+		// when
+		RequestBuilder requestBuilder = MockMvcRequestBuilders
+				.get("/test/resource?apiKey={0}", publicClientKey.getClientId())
+				.accept(MediaType.APPLICATION_JSON);
+		MockHttpServletResponse result = mockMvc.perform(requestBuilder)
+				.andReturn()
+				.getResponse();
+
+		// then
+		assertThat(result.getStatus()).isEqualTo(HttpStatus.SERVICE_UNAVAILABLE.value());
+		String requestId = result.getHeader(REQUEST_ID_HEADER_NAME);
+		assertThat(requestId).isNotBlank();
+
+		ArgumentCaptor<AuditLogRecord> auditLogRecordArgumentCaptor = ArgumentCaptor.forClass(AuditLogRecord.class);
+		verify(auditLogRecordRepository).save(auditLogRecordArgumentCaptor.capture());
+		AuditLogRecord auditLogRecord = auditLogRecordArgumentCaptor.getValue();
+		assertThat(auditLogRecord.getClientKey()).isEqualTo(publicClientKey.getClientId());
+	}
+
+	@Test
 	public void shouldRouteRequestForConfidentialClientKey_WhenGivenValidCredentials() throws Exception {
 
 		// given
 		givenThat(get(urlEqualTo("/resource"))
-				.willReturn(aResponse().withStatus(200)));
+				.willReturn(aResponse().withStatus(HttpStatus.OK.value())));
 
 		// when
 		RequestBuilder requestBuilder = MockMvcRequestBuilders
 				.get("/test/resource")
 				.accept(MediaType.APPLICATION_JSON)
-				.header(HttpHeaders.AUTHORIZATION, "Basic " + base64EncodeClientCredentials(confidentialClientKey));
+				.header(HttpHeaders.AUTHORIZATION, "Basic " + base64EncodeClientCredentials(confidentialClientKey.getClientId(), confidentialSecretKey));
 		MockHttpServletResponse result = mockMvc.perform(requestBuilder).andReturn().getResponse();
 
 		// then

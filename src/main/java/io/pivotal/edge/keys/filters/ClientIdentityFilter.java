@@ -4,9 +4,8 @@ import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
 import com.netflix.zuul.util.HTTPRequestUtils;
-import io.pivotal.edge.EdgeRequestContext;
+import io.pivotal.edge.routing.EdgeRequestContext;
 import io.pivotal.edge.events.EventPublisher;
-import io.pivotal.edge.keys.ClientKeyService;
 import io.pivotal.edge.keys.web.ClientKey;
 import io.pivotal.edge.keys.web.ClientService;
 import io.pivotal.edge.security.SecurityException;
@@ -33,13 +32,10 @@ public class ClientIdentityFilter extends ZuulFilter {
 
     private ClientIdentityService clientIdentityService;
 
-    private ClientKeyService clientKeyService;
-
     private EventPublisher eventPublisher;
 
-    public ClientIdentityFilter(ClientIdentityService clientIdentityService, ClientKeyService clientKeyService, EventPublisher eventPublisher) {
+    public ClientIdentityFilter(ClientIdentityService clientIdentityService, EventPublisher eventPublisher) {
         this.clientIdentityService = clientIdentityService;
-        this.clientKeyService = clientKeyService;
         this.eventPublisher = eventPublisher;
     }
 
@@ -71,7 +67,7 @@ public class ClientIdentityFilter extends ZuulFilter {
             throw new ZuulException(new SecurityException(), HttpStatus.FORBIDDEN.value(), "Invalid Client Credentials");
         }
 
-        ClientKey clientKey = clientKeyService.findById(edgeRequestContext.getClientId());
+        ClientKey clientKey = clientIdentityService.findCachedClientKeyById(edgeRequestContext.getClientId());
         if (Objects.isNull(clientKey)) {
             log.info("Client Identity Filter: Client Credentials could not be resolved");
             throw new ZuulException(new SecurityException(), HttpStatus.FORBIDDEN.value(), "Invalid Client Credentials");
@@ -101,7 +97,7 @@ public class ClientIdentityFilter extends ZuulFilter {
         }
     }
 
-    private void stripClientKeyFrom(RequestContext requestContext, EdgeRequestContext clientCreds) {
+    private void stripClientKeyFrom(RequestContext requestContext, EdgeRequestContext edgeRequestContext) {
 
         Map<String, List<String>> queryParams = HTTPRequestUtils.getInstance().getQueryParams();
         if (Objects.nonNull(queryParams)) {
@@ -109,7 +105,7 @@ public class ClientIdentityFilter extends ZuulFilter {
             requestContext.setRequestQueryParams(queryParams);
         }
 
-        if (StringUtils.equalsIgnoreCase(clientCreds.getRealm(), "BASIC")) {
+        if (StringUtils.equalsIgnoreCase(edgeRequestContext.getRealm(), "BASIC")) {
             EdgeHttpServletRequestWrapper edgeRequestWrapper = EdgeHttpServletRequestWrapper.extractFrom(requestContext.getRequest());
             if (Objects.nonNull(edgeRequestWrapper)) {
                 edgeRequestWrapper.remove(HttpHeaders.AUTHORIZATION);

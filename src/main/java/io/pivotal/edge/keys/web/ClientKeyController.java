@@ -1,11 +1,9 @@
 package io.pivotal.edge.keys.web;
 
-import io.pivotal.edge.keys.ClientKeyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.NoHandlerFoundException;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import javax.validation.Valid;
@@ -25,7 +23,7 @@ public class ClientKeyController {
     }
 
     @GetMapping(value = "/{id}")
-    public ClientKey getClientKey(@PathVariable String id) throws NoHandlerFoundException {
+    public ClientKey getClientKey(@PathVariable String id) {
         return clientKeyService.findById(id);
     }
 
@@ -38,7 +36,7 @@ public class ClientKeyController {
     }
 
     @DeleteMapping(value = "/{id}")
-    public void deleteClientKey(@PathVariable String id) throws NoHandlerFoundException {
+    public void deleteClientKey(@PathVariable String id) {
         clientKeyService.deleteById(id);
     }
 

@@ -32,8 +32,10 @@ zuul:
           refresh-interval: 1
           type:
             - origin
+            - user
       cache:
         - limit: 200
           refresh-interval: 2
           type:
             - origin
+            - user

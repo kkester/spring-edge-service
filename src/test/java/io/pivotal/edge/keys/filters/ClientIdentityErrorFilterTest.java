@@ -1,11 +1,10 @@
-package io.pivotal.edge.security;
+package io.pivotal.edge.keys.filters;
 
 import com.netflix.zuul.context.RequestContext;
-import io.pivotal.edge.EdgeRequestContext;
+import io.pivotal.edge.routing.EdgeRequestContext;
 import io.pivotal.edge.events.EventPublisher;
 import io.pivotal.edge.events.ClientIdentifiedEvent;
 import io.pivotal.edge.keys.filters.ClientIdentityErrorFilter;
-import io.pivotal.edge.keys.filters.ClientIdentityService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,6 +29,9 @@ public class ClientIdentityErrorFilterTest {
     private ClientIdentityErrorFilter subject;
 
     @Mock
+    private ClientIdentityService clientIdentityService;
+
+    @Mock
     private RequestContext requestContext;
 
     @Mock
@@ -47,15 +49,15 @@ public class ClientIdentityErrorFilterTest {
         when(requestContext.getRequest()).thenReturn(httpServletRequest);
 
         edgeRequestContext = new EdgeRequestContext();
-        edgeRequestContext.setClientId(API_KEY);
-        edgeRequestContext.setRequestId(UUID.randomUUID().toString());
 
-        subject = new ClientIdentityErrorFilter(new ClientIdentityService(), eventPublisher);
+        subject = new ClientIdentityErrorFilter(clientIdentityService, eventPublisher);
     }
 
     @Test
     public void testRun() {
         // given
+        edgeRequestContext.setClientId(API_KEY);
+        edgeRequestContext.setRequestId(UUID.randomUUID().toString());
         when(requestContext.get(EDGE_REQUEST_CONTEXT)).thenReturn(edgeRequestContext);
 
         // when
@@ -73,6 +75,7 @@ public class ClientIdentityErrorFilterTest {
     public void testRunWhenMissingRequestContext() {
         // given
         when(requestContext.get(EDGE_REQUEST_CONTEXT)).thenReturn(null);
+        when(clientIdentityService.createEdgeRequestContextFrom(any())).thenReturn(edgeRequestContext);
 
         // when
         Object results = subject.run();

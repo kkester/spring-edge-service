@@ -1,4 +1,4 @@
-package io.pivotal.edge.keys;
+package io.pivotal.edge;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -26,9 +26,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(final HttpSecurity http) throws Exception {
 
-        http.authorizeRequests().antMatchers("**").permitAll().and().csrf().disable();
+//        http.authorizeRequests().antMatchers("**").permitAll().and().csrf().disable();
 
-        /*
         http.sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
@@ -37,7 +36,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .csrf()
                 .disable();
-        */
     }
 
     /**

@@ -1,4 +1,4 @@
-package io.pivotal.edge;
+package io.pivotal.edge.routing;
 
 import lombok.Data;
 

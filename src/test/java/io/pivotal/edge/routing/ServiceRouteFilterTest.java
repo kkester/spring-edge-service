@@ -1,7 +1,6 @@
 package io.pivotal.edge.routing;
 
 import com.netflix.zuul.context.RequestContext;
-import io.pivotal.edge.EdgeRequestContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

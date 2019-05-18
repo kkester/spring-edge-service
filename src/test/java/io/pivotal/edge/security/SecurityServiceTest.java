@@ -1,16 +1,18 @@
 package io.pivotal.edge.security;
 
-import io.pivotal.edge.EdgeRequestContext;
+import io.pivotal.edge.routing.EdgeRequestContext;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SecurityServiceTest {
@@ -60,22 +62,4 @@ public class SecurityServiceTest {
         assertThat(result).isFalse();
     }
 
-    @Test
-    public void testValidateInvalidConfidentialClientKey() {
-        // given
-        String secretKey = "secretKey";
-        allowedServices.put(VALID_SERVICE_ID, null);
-        EdgeRequestContext edgeRequestContext = new EdgeRequestContext();
-        edgeRequestContext.setApplicationType("confidential");
-        edgeRequestContext.setClientSecretKey("clientSecretKey");
-        edgeRequestContext.setRequestSecretKey(secretKey);
-        edgeRequestContext.setServiceId(VALID_SERVICE_ID);
-        edgeRequestContext.setAllowedServices(allowedServices);
-
-        // when
-        boolean result = subject.validate(edgeRequestContext);
-
-        // then
-        assertThat(result).isFalse();
-    }
 }

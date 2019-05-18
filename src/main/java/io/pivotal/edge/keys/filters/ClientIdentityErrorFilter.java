@@ -2,7 +2,7 @@ package io.pivotal.edge.keys.filters;
 
 import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
-import io.pivotal.edge.EdgeRequestContext;
+import io.pivotal.edge.routing.EdgeRequestContext;
 import io.pivotal.edge.events.EventPublisher;
 import io.pivotal.edge.events.ClientIdentifiedEvent;
 import lombok.extern.slf4j.Slf4j;

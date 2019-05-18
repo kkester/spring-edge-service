@@ -9,10 +9,10 @@ import javax.persistence.Table;
 @Data
 @Entity
 @Table(name = "oauth_client_details_services")
-public class ClientDetailServiceEntity {
+public class ClientDetailsServiceEntity {
 
     @EmbeddedId
-    private ClientDetailServiceKey key;
+    private ClientDetailsServiceKey key;
 
     private String path;
 

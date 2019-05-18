@@ -8,6 +8,6 @@ application:
   integration:
     throttle: 25
     edge-service-app-host: ${edge_service_app_host}
-    public-api-key: 75a1bd6aaf454c6d92258f262e704ad8
-    confidential-api-key: 35c80ac9f99041de9395a4039be74ede
-    confidential-secret-key: fb042b1414c3489a91166e21cdb55b2f
+    public-api-key: 032c1d99fc4c41968acba2ca6ad2064f
+    confidential-api-key: 8751c8c7e50c452382c9644f2c64ec1a
+    confidential-secret-key: 8000bb645ff04d9a803a616984534d72

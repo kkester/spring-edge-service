@@ -1,5 +1,6 @@
 package io.pivotal.edge.keys.web;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -11,6 +12,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ClientKey {
 
     private String clientId;
@@ -23,8 +25,8 @@ public class ClientKey {
     @NotNull
     private List<ClientService> services;
 
-    private LocalDateTime createdOn;
+    private Integer accessTokenValidity;
 
-    private LocalDateTime lastUpdated;
+    private Integer refreshTokenValidity;
 
 }

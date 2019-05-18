@@ -3,7 +3,7 @@ package io.pivotal.edge.security;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
 import com.netflix.zuul.monitoring.CounterFactory;
-import io.pivotal.edge.EdgeRequestContext;
+import io.pivotal.edge.routing.EdgeRequestContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

@@ -7,7 +7,7 @@ import java.io.Serializable;
 
 @Data
 @Embeddable
-public class ClientDetailServiceKey implements Serializable {
+public class ClientDetailsServiceKey implements Serializable {
 
     private String clientId;
     private String serviceId;

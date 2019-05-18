@@ -32,21 +32,22 @@ public class CloseableHttpClientWrapper extends CloseableHttpClient {
     protected CloseableHttpResponse doExecute(HttpHost target, HttpRequest request, HttpContext context) throws IOException {
 
         HttpCacheContext httpCacheContext = HttpCacheContext.create();
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime start = null;
         CloseableHttpResponse httpResponse = null;
         try {
+            start = LocalDateTime.now();
             httpResponse = closeableHttpClient.execute(target, request, httpCacheContext);
         } finally {
-            LocalDateTime endTime = LocalDateTime.now();
+            LocalDateTime end = LocalDateTime.now();
             Header requestIdHeader = request.getFirstHeader(REQUEST_ID_HEADER_NAME);
             OriginRequestCompletedEvent requestCompletedEvent = OriginRequestCompletedEvent.builder()
-                    .endTime(endTime)
                     .requestId(requestIdHeader == null ? null : requestIdHeader.getValue())
                     .host(target)
                     .context(httpCacheContext)
                     .httpRequest(request)
                     .httpResponse(httpResponse)
-                    .startTime(now)
+                    .startTime(start)
+                    .endTime(end)
                     .build();
             eventPublisher.publishEvent(requestCompletedEvent);
         }
