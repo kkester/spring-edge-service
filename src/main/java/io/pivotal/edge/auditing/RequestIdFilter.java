@@ -33,15 +33,20 @@ public class RequestIdFilter extends ZuulFilter {
     @Override
     public Object run() {
 
-        log.info("Executing Request Id Filter");
-
-        RequestContext ctx = RequestContext.getCurrentContext();
-        EdgeHttpServletRequestWrapper edgeRequestWrapper = EdgeHttpServletRequestWrapper.extractFrom(ctx.getRequest());
-        if (!Objects.isNull(edgeRequestWrapper)) {
-            String requestId = edgeRequestWrapper.getRequestId();
-            ctx.put(REQUEST_ID_HEADER_NAME, requestId);
-            ctx.addZuulRequestHeader(REQUEST_ID_HEADER_NAME, requestId);
-            ctx.addZuulResponseHeader(REQUEST_ID_HEADER_NAME, requestId);
+        try {
+            RequestContext ctx = RequestContext.getCurrentContext();
+            EdgeHttpServletRequestWrapper edgeRequestWrapper = EdgeHttpServletRequestWrapper.extractFrom(ctx.getRequest());
+            if (!Objects.isNull(edgeRequestWrapper)) {
+                String requestId = edgeRequestWrapper.getRequestId();
+                log.info("Executing Request Id Filter for {}", requestId);
+                ctx.put(REQUEST_ID_HEADER_NAME, requestId);
+                ctx.addZuulRequestHeader(REQUEST_ID_HEADER_NAME, requestId);
+                ctx.addZuulResponseHeader(REQUEST_ID_HEADER_NAME, requestId);
+            } else {
+                log.info("Executing Request Id Filter");
+            }
+        } catch (Exception e) {
+            log.warn("Error occurred Executing Request Id Filter: {}", e);
         }
 
         return null;

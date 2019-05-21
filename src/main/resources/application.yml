@@ -16,6 +16,10 @@ spring:
     username: "root"
     password: "yourpassword"
 
+security:
+  signing-key: MaYzkSjmkzPC57L
+  security-realm: Spring Edge Service Realm
+
 elasticsearch:
   clustername: elasticsearch_keithkester
   host: localhost

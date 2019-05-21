@@ -23,6 +23,12 @@ zuul:
       customSensitiveHeaders: true
       threshold: 200
       thresholdUnit: MINUTES
+    redis:
+      path: /redis/**
+      url: https://spring-product-redis.apps.pcfone.io
+      customSensitiveHeaders: true
+      threshold: 200
+      thresholdUnit: MINUTES
   ratelimit:
     enabled: true
     repository: REDIS

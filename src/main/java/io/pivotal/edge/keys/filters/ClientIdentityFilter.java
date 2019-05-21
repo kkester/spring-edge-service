@@ -4,12 +4,12 @@ import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
 import com.netflix.zuul.util.HTTPRequestUtils;
-import io.pivotal.edge.routing.EdgeRequestContext;
+import io.pivotal.edge.events.ClientIdentifiedEvent;
 import io.pivotal.edge.events.EventPublisher;
 import io.pivotal.edge.keys.web.ClientKey;
 import io.pivotal.edge.keys.web.ClientService;
+import io.pivotal.edge.routing.EdgeRequestContext;
 import io.pivotal.edge.security.SecurityException;
-import io.pivotal.edge.events.ClientIdentifiedEvent;
 import io.pivotal.edge.servlet.filters.EdgeHttpServletRequestWrapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.StringUtils;
@@ -17,7 +17,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -105,7 +104,7 @@ public class ClientIdentityFilter extends ZuulFilter {
             requestContext.setRequestQueryParams(queryParams);
         }
 
-        if (StringUtils.equalsIgnoreCase(edgeRequestContext.getRealm(), "BASIC")) {
+        if (StringUtils.equalsIgnoreCase(edgeRequestContext.getAuthorizationType(), "BASIC")) {
             EdgeHttpServletRequestWrapper edgeRequestWrapper = EdgeHttpServletRequestWrapper.extractFrom(requestContext.getRequest());
             if (Objects.nonNull(edgeRequestWrapper)) {
                 edgeRequestWrapper.remove(HttpHeaders.AUTHORIZATION);
@@ -113,8 +112,4 @@ public class ClientIdentityFilter extends ZuulFilter {
         }
     }
 
-    private String getRequestUriFrom(RequestContext ctx) {
-        HttpServletRequest request = ctx.getRequest();
-        return request == null ? null : request.getRequestURI();
-    }
 }

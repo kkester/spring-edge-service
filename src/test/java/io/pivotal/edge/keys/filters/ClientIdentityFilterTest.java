@@ -14,7 +14,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 import org.springframework.http.HttpHeaders;
 
@@ -109,7 +108,7 @@ public class ClientIdentityFilterTest {
 
         EdgeRequestContext edgeRequestContext = new EdgeRequestContext();
         edgeRequestContext.setClientId(apiKey);
-        edgeRequestContext.setRealm(realm);
+        edgeRequestContext.setAuthorizationType(realm);
         when(clientIdentityService.createEdgeRequestContextFrom(requestContext)).thenReturn(edgeRequestContext);
 
         ClientKey clientKey = new ClientKey();

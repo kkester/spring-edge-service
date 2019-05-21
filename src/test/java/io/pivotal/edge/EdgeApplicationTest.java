@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import io.pivotal.edge.auditing.AuditLogRecord;
 import io.pivotal.edge.auditing.AuditLogRecordRepository;
 import io.pivotal.edge.keys.domain.*;
+import io.pivotal.edge.security.SecurityUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -62,7 +63,6 @@ public class EdgeApplicationTest {
 	private ClientDetailsServiceEntityRepository clientDetailsServiceEntityRepository;
 
 	@Autowired
-	@Mock
 	private BCryptPasswordEncoder passwordEncoder;
 
 	private ClientDetailsEntity confidentialClientKey;
@@ -162,6 +162,32 @@ public class EdgeApplicationTest {
 				.get("/test/resource")
 				.accept(MediaType.APPLICATION_JSON)
 				.header(HttpHeaders.AUTHORIZATION, "Basic " + base64EncodeClientCredentials(confidentialClientKey.getClientId(), confidentialSecretKey));
+		MockHttpServletResponse result = mockMvc.perform(requestBuilder).andReturn().getResponse();
+
+		// then
+		assertThat(result.getStatus()).isEqualTo(HttpStatus.OK.value());
+		String requestId = result.getHeader(REQUEST_ID_HEADER_NAME);
+		assertThat(requestId).isNotBlank();
+
+		ArgumentCaptor<AuditLogRecord> auditLogRecordArgumentCaptor = ArgumentCaptor.forClass(AuditLogRecord.class);
+		verify(auditLogRecordRepository).save(auditLogRecordArgumentCaptor.capture());
+		AuditLogRecord auditLogRecord = auditLogRecordArgumentCaptor.getValue();
+		assertThat(auditLogRecord.getClientKey()).isEqualTo(confidentialClientKey.getClientId());
+	}
+
+	@Test
+	public void shouldRouteRequestForConfidentialClientKey_WhenGivenValidBearerToken() throws Exception {
+
+		// given
+		String bearerToken = "bearer " + SecurityUtil.createBearerTokenFrom(confidentialClientKey.getClientId());
+		givenThat(get(urlEqualTo("/resource"))
+				.willReturn(aResponse().withStatus(HttpStatus.OK.value())));
+
+		// when
+		RequestBuilder requestBuilder = MockMvcRequestBuilders
+				.get("/test/resource")
+				.accept(MediaType.APPLICATION_JSON)
+				.header(HttpHeaders.AUTHORIZATION, bearerToken);
 		MockHttpServletResponse result = mockMvc.perform(requestBuilder).andReturn().getResponse();
 
 		// then
